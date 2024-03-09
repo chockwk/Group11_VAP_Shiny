@@ -1,5 +1,5 @@
 # Load required packages
-pacman::p_load(bslib, shiny, shinydashboard)
+pacman::p_load(bslib, shiny, shinydashboard, shinyWidgets)
 
 sidebar <- dashboardSidebar(
   sidebarMenu(
@@ -33,6 +33,10 @@ fluidPage(
   titlePanel("The Heat is On!"),
   # Theme
   theme = bslib::bs_theme(bootswatch = "morph"),
+  # Wallpaper
+  setBackgroundImage(
+    src = "https://wallpapers.com/images/hd/cute-aesthetic-cloudy-sky-vyyff3zydu6k5b9l.jpg"
+  ),
   
   navlistPanel(
     id = "tabset",
