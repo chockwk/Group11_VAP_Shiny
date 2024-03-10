@@ -35,6 +35,7 @@ fluidPage(
   theme = bslib::bs_theme(bootswatch = "morph"),
   # Wallpaper
   setBackgroundImage(
+#    src = "https://storage.googleapis.com/pod_public/1300/95971.jpg"
     src = "https://wallpapers.com/images/hd/cute-aesthetic-cloudy-sky-vyyff3zydu6k5b9l.jpg"
   ),
   
