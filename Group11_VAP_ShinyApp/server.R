@@ -1,4 +1,4 @@
-pacman::p_load(shiny, tidyverse, readr, plotly, forecast, stats, zoo, shinyjs)
+pacman::p_load(shiny, tidyverse, readr, plotly, forecast, stats, zoo, shinyjs, ggstatsplot)
 
 # import data
 temp_data <-read_rds("data/rds/temperature.rds")
@@ -47,8 +47,24 @@ Rain_YM_allR <- rain_data %>%
   ungroup() %>% 
   filter(!is.na(TotalRain))
 
+weather_Y <-read_rds("data/rds/weather_y.rds")
+
 # Define server logic
 function(input, output, session) {
+  
+  output$correlationPlot <- renderPlot({
+    var <- sym(input$variable)
+    
+    ggscatterstats(
+      data = weather_Y,
+      x = "MeanTemp",
+      y = "TotalRainfall",
+      method = input$method,
+      type = input$type,
+      marginal = input$marginal
+    ) + 
+      facet_wrap(vars(!!var))
+  })
   
   forecastPlotReady <- reactiveValues(ok = FALSE)
 

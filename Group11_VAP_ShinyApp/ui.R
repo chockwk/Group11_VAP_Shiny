@@ -1,7 +1,8 @@
 # Load required packages
-pacman::p_load(bslib, shiny, shinydashboard, shinyWidgets, plotly)
+pacman::p_load(bslib, shiny, shinydashboard, shinyWidgets, plotly, ggstatsplot)
 
 sidebar <- dashboardSidebar(
+  width = 100,
   sidebarMenu(
       menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
       menuItem("Widgets", icon = icon("th"), tabName = "widgets", badgeLabel = "new", badgeColor = "green")
@@ -47,7 +48,29 @@ fluidPage(
     "Exploratory Data Analysis",
     tabPanel("Time Series Analysis", "Panel 6 contents"),
     tabPanel("Geospatial Analysis", "Panel 7 contents"),
-    tabPanel("Correlation", "Panel 7 contents"),
+    tabPanel("Correlation", 
+             sidebarLayout(
+               sidebarPanel(
+                 selectInput("variable", "Choose a grouping variable:",
+                             choices = c("Station", "Region")
+                             ),
+                 selectInput("method", "Smoothing Method:", 
+                             choices = c("auto", "lm", "glm", "gam", "loess")
+                             ),
+                 selectInput("association_type", "Association Type:", 
+                             choices = c("parametric" = "p", "nonparametric" = "np", "robust" = "r")
+                             ),
+                 selectInput("marginal_type", "Marginal Distribution Type:", 
+                             choices = c("histogram", "boxplot", "density", "violin", "densigram")
+                             )
+               ),
+               actionButton("showPlotButton", "Plot")
+              ),
+              mainPanel(
+                plotOutput("correlationPlot")
+              )
+            )
+    ),
     "Confirmatory Data Analysis",
     tabPanel("Distribution", "Panel 8 contents"),
     tabPanel("Statistical Testing", "Panel 9 contents"),
@@ -88,8 +111,6 @@ fluidPage(
                )
              )
     )
-             
-  )
-  
+
 )
 
