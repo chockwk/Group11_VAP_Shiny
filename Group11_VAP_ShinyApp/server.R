@@ -47,8 +47,51 @@ Rain_YM_allR <- rain_data %>%
   ungroup() %>% 
   filter(!is.na(TotalRain))
 
+weather_YM <- merge(rain_data, temp_data, by=c("Station", "Region", "Year", "Month", "Date"))
+
+weather_Y <- weather_YM %>%
+  select(-Month, -Date) %>%
+  group_by(Station, Region, Year) %>%
+  summarise(
+    MeanTemp = round(mean(MeanTemp, na.rm = TRUE), 1),
+    MaxTemp = round(mean(MaxTemp, na.rm = TRUE), 1),
+    MinTemp = round(mean(MinTemp, na.rm = TRUE), 1),
+    TotalRainfall = round(mean(TotalRainfall, na.rm = TRUE), 1),
+    TotalRainfall30 = round(mean(TotalRainfall30, na.rm = TRUE), 1),
+    TotalRainfall60 = round(mean(TotalRainfall60, na.rm = TRUE), 1),
+    TotalRainfall1120 = round(mean(TotalRainfall120, na.rm = TRUE), 1)
+  ) %>%
+  ungroup()
+
 # Define server logic
 function(input, output, session) {
+  
+  options(scipen = 999)
+  
+  plotcorrelation <- function(a, method = "auto", association_type = "np", marginal_type = "histogram") {
+    if (!is.character(a) || !(a %in% names(weather_Y))) {
+      stop("Please provide a valid column name as a string.")
+    }
+    
+    var <- rlang::sym(a)
+    
+    output$correlationPlot <- renderPlot({
+      ggscatterstats(
+        data = weather_Y,
+        x = "MeanTemp",  
+        y = "TotalRainfall", 
+        method = method,  # Smoothing method: "auto", "lm", "glm", "gam", "loess", or a function
+        type = association_type,  # Association type: "p" (parametric), "np" (nonparametric), "r" (robust)
+        marginal = marginal_type  # Marginal distribution type: "histogram", "boxplot", "density", "violin", "densigram"
+      ) + 
+        facet_wrap(vars(!!var)) 
+    })
+  }
+  
+  observeEvent(input$showPlotButton, {
+    plotcorrelation(input$variable, input$method, input$association_type, input$marginal_type)
+  })
+  
   
   forecastPlotReady <- reactiveValues(ok = FALSE)
 

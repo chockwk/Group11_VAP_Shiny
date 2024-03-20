@@ -50,6 +50,7 @@ fluidPage(
     "Exploratory Data Analysis",
     tabPanel("Time Series Analysis", "Panel 6 contents"),
     tabPanel("Geospatial Analysis", "Panel 7 contents"),
+    
     tabPanel("Correlation", 
              sidebarLayout(
                sidebarPanel(
@@ -64,14 +65,15 @@ fluidPage(
                  ),
                  selectInput("marginal_type", "Marginal Distribution Type:", 
                              choices = c("histogram", "boxplot", "density", "violin", "densigram")
-                 )
+                 ),
+                 actionButton("showPlotButton", "Plot")
                ),
-               actionButton("showPlotButton", "Plot")
-             ),
-             mainPanel(
-               plotOutput("correlationPlot")
+               mainPanel(
+                 plotOutput("correlationPlot")
+               )
              )
-           ),
+    ),
+                
 
     "Confirmatory Data Analysis",
     tabPanel("Distribution", "Panel 8 contents"),
