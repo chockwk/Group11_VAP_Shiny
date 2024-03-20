@@ -1,4 +1,4 @@
-pacman::p_load(shiny, tidyverse, readr, plotly, forecast, stats, zoo, shinyjs, ggstatsplot)
+pacman::p_load(shiny, tidyverse, dplyr, readr, plotly, forecast, stats, zoo, shinyjs, ggstatsplot, sf, tmap, terra, gstat, viridis, automap, sp, spacetime, raster)
 
 # import data
 temp_data <-read_rds("data/rds/temperature.rds")
@@ -47,10 +47,35 @@ Rain_YM_allR <- rain_data %>%
   ungroup() %>% 
   filter(!is.na(TotalRain))
 
+# Geospatial
+
+stations <- read.csv("data/aspatial/RainfallStation.csv")
+
+mpsz <- st_read(dsn = "data/geospatial", layer = "MPSZ-2019") %>% 
+  st_transform(crs=3414)
+
+tpdata <- temp_data %>% 
+  dplyr::select(Station, MeanTemp) %>% 
+  left_join(stations)
+
+tpdata_sf <- st_as_sf(tpdata, coords = c("Longitude", "Latitude"),
+                      crs = 4326) %>% 
+  st_transform(crs = 3414)
+
+rfdata <- rain_data %>% 
+  dplyr::select(Station, TotalRainfall) %>% 
+  left_join(stations)
+
+rfdata_sf <- st_as_sf(rfdata, coords = c("Longitude", "Latitude"), # xaxis then yaxis
+                      crs = 4326) %>% 
+  st_transform(crs = 3414)
+
+# Correlation
+
 weather_YM <- merge(rain_data, temp_data, by=c("Station", "Region", "Year", "Month", "Date"))
 
 weather_Y <- weather_YM %>%
-  select(-Month, -Date) %>%
+  dplyr::select(-Month, -Date) %>%
   group_by(Station, Region, Year) %>%
   summarise(
     MeanTemp = round(mean(MeanTemp, na.rm = TRUE), 1),
@@ -65,6 +90,75 @@ weather_Y <- weather_YM %>%
 
 # Define server logic
 function(input, output, session) {
+  
+  # Geospatial
+  
+  output$geo_plot <- renderPlot({
+    
+    # Create grid
+    grid <- terra::rast(mpsz, nrows = 690, ncols = 1075)
+    
+    # Extract xy coordinates
+    xy <- terra::xyFromCell(grid, 1:ncell(grid))
+    
+    coop <- st_as_sf(as.data.frame(xy), coords = c("x", "y"), crs = st_crs(mpsz))
+
+    coop <- st_filter(coop, mpsz)
+    
+    # Check which variable to analyze
+    if (input$analysis_variable == "Temperature") {
+      data_sf <- tpdata_sf
+      analysis_var <- "MeanTemp"
+      title <- "Distribution of Mean Temperature"
+    } else {
+      data_sf <- rfdata_sf
+      analysis_var <- "TotalRainfall"
+      title <- "Distribution of Total Rainfall"
+    }
+    
+    # Perform geostatistical analysis
+    model <- switch(input$model_option, 
+                    Sph = "Sph", 
+                    Exp = "Exp", 
+                    Gau = "Gau", 
+                    Lin = "Lin")
+    
+    res <- gstat::gstat(formula = as.formula(paste(analysis_var, "~ 1")), 
+                        locations = data_sf, 
+                        nmax = input$n_neighbors,
+                        set = list(idp = 0),
+                        model = vgm(psill = 0.5, model = model, range = input$range_param, nugget = 0.1))
+    
+    resp <- predict(res, coop)
+    
+    resp$x <- st_coordinates(resp)[, 1]
+    resp$y <- st_coordinates(resp)[, 2]
+    resp$pred <- resp$var1.pred
+    
+    pred <- terra::rasterize(resp, grid, 
+                             field = "pred", 
+                             fun = "mean")
+    
+    # Plot the result
+    tmap_options(check.and.fix = TRUE)
+    tmap_mode("plot")
+    tm_shape(pred) + 
+      tm_raster(alpha = 0.6, palette = "viridis") +
+      tm_layout(main.title = "Distribution of Mean Temperature",
+                main.title.position = "center",
+                main.title.size = 1.2,
+                legend.height = 0.45, 
+                legend.width = 0.35,
+                frame = TRUE) +
+      tm_compass(type = "8star", size = 2) +
+      tm_scale_bar() +
+      tm_grid(alpha = 0.2)
+   })
+  
+  
+  
+  
+  # Correlation
   
   options(scipen = 999)
   
@@ -92,6 +186,8 @@ function(input, output, session) {
     plotcorrelation(input$variable, input$method, input$association_type, input$marginal_type)
   })
   
+  
+  # Forecast
   
   forecastPlotReady <- reactiveValues(ok = FALSE)
 

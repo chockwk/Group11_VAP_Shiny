@@ -49,7 +49,33 @@ fluidPage(
     
     "Exploratory Data Analysis",
     tabPanel("Time Series Analysis", "Panel 6 contents"),
-    tabPanel("Geospatial Analysis", "Panel 7 contents"),
+    
+    tabPanel("Geospatial Analysis",
+             sidebarLayout(
+               sidebarPanel(
+                 selectInput("analysis_variable", "Variable:",
+                             choices = c("Temperature", "Rainfall")
+                 ),
+                 sliderInput("n_neighbors", "Number of Neighbors:",
+                             min = 0, max = 20, value = 5
+                 ),
+                 selectInput("model_option", "Model Options:",
+                             choices = c("Sph", "Exp", "Gau", "Lin")
+                 ),
+                 sliderInput("range_param", "Range:",
+                             min = 1000, max = 5000, step = 1000, value = 5000
+                 ),
+                 selectInput("fit_method", "Fit Methods:",
+                             choices = c(1, 2, 3, 4),
+                             selected = 1
+                 ),
+               actionButton("showPlotButton", "Plot")
+             ),
+             mainPanel(
+               plotOutput("geo_plot")
+             )
+           )
+    ),
     
     tabPanel("Correlation", 
              sidebarLayout(
