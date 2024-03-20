@@ -42,9 +42,11 @@ fluidPage(
   
   navlistPanel(
     id = "tabset",
+    
     "Overview",
     tabPanel("Introduction", "Panel one contents"),
     tabPanel("Dashboard", "Panel two contents"),
+    
     "Exploratory Data Analysis",
     tabPanel("Time Series Analysis", "Panel 6 contents"),
     tabPanel("Geospatial Analysis", "Panel 7 contents"),
@@ -53,27 +55,28 @@ fluidPage(
                sidebarPanel(
                  selectInput("variable", "Choose a grouping variable:",
                              choices = c("Station", "Region")
-                             ),
+                 ),
                  selectInput("method", "Smoothing Method:", 
                              choices = c("auto", "lm", "glm", "gam", "loess")
-                             ),
+                 ),
                  selectInput("association_type", "Association Type:", 
                              choices = c("parametric" = "p", "nonparametric" = "np", "robust" = "r")
-                             ),
+                 ),
                  selectInput("marginal_type", "Marginal Distribution Type:", 
                              choices = c("histogram", "boxplot", "density", "violin", "densigram")
-                             )
+                 )
                ),
                actionButton("showPlotButton", "Plot")
-              ),
-              mainPanel(
-                plotOutput("correlationPlot")
-              )
-            )
-    ),
+             ),
+             mainPanel(
+               plotOutput("correlationPlot")
+             )
+           ),
+
     "Confirmatory Data Analysis",
     tabPanel("Distribution", "Panel 8 contents"),
     tabPanel("Statistical Testing", "Panel 9 contents"),
+
     "Forecasting",
     tabPanel("Time Series Forecasting", 
              sidebarLayout(
@@ -110,6 +113,7 @@ fluidPage(
                  plotlyOutput("plotForecast")
                )
              )
+          )
     )
 
 )
