@@ -47,29 +47,6 @@ Rain_YM_allR <- rain_data %>%
   ungroup() %>% 
   filter(!is.na(TotalRain))
 
-# Geospatial
-
-stations <- read.csv("data/aspatial/RainfallStation.csv")
-
-mpsz <- st_read(dsn = "data/geospatial", layer = "MPSZ-2019") %>% 
-  st_transform(crs=3414)
-
-tpdata <- temp_data %>% 
-  dplyr::select(Station, MeanTemp) %>% 
-  left_join(stations)
-
-tpdata_sf <- st_as_sf(tpdata, coords = c("Longitude", "Latitude"),
-                      crs = 4326) %>% 
-  st_transform(crs = 3414)
-
-rfdata <- rain_data %>% 
-  dplyr::select(Station, TotalRainfall) %>% 
-  left_join(stations)
-
-rfdata_sf <- st_as_sf(rfdata, coords = c("Longitude", "Latitude"), # xaxis then yaxis
-                      crs = 4326) %>% 
-  st_transform(crs = 3414)
-
 # Correlation
 
 weather_YM <- merge(rain_data, temp_data, by=c("Station", "Region", "Year", "Month", "Date"))
@@ -88,74 +65,71 @@ weather_Y <- weather_YM %>%
   ) %>%
   ungroup()
 
+
+
 # Define server logic
 function(input, output, session) {
   
   # Geospatial
   
+  # Data loading should be handled outside of reactive context if they are static
+  stations <- read.csv("data/aspatial/RainfallStation.csv")
+  mpsz <- st_read(dsn = "data/geospatial", layer = "MPSZ-2019") %>% 
+    st_transform(crs=3414)
+  
+  # Assuming temp_data and rain_data are already loaded into the R session
+  
   output$geo_plot <- renderPlot({
-    
-    # Create grid
-    grid <- terra::rast(mpsz, nrows = 690, ncols = 1075)
-    
-    # Extract xy coordinates
-    xy <- terra::xyFromCell(grid, 1:ncell(grid))
-    
-    coop <- st_as_sf(as.data.frame(xy), coords = c("x", "y"), crs = st_crs(mpsz))
-
-    coop <- st_filter(coop, mpsz)
-    
-    # Check which variable to analyze
-    if (input$analysis_variable == "Temperature") {
-      data_sf <- tpdata_sf
-      analysis_var <- "MeanTemp"
-      title <- "Distribution of Mean Temperature"
+    # Check which variable to analyze and select the corresponding data frame
+    data_sf <- if (input$analysis_variable == "Temperature") {
+      temp_data %>% 
+        dplyr::select(Station, MeanTemp) %>% 
+        left_join(stations, by = "Station") %>% 
+        st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326) %>% 
+        st_transform(crs = 3414)
     } else {
-      data_sf <- rfdata_sf
-      analysis_var <- "TotalRainfall"
-      title <- "Distribution of Total Rainfall"
+      rain_data %>% 
+        dplyr::select(Station, TotalRainfall) %>% 
+        left_join(stations, by = "Station") %>% 
+        st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326) %>% 
+        st_transform(crs = 3414)
     }
     
-    # Perform geostatistical analysis
-    model <- switch(input$model_option, 
-                    Sph = "Sph", 
-                    Exp = "Exp", 
-                    Gau = "Gau", 
-                    Lin = "Lin")
+    # Prepare for geospatial analysis
+    analysis_var <- if(input$analysis_variable == "Temperature") "MeanTemp" else "TotalRainfall"
     
-    res <- gstat::gstat(formula = as.formula(paste(analysis_var, "~ 1")), 
-                        locations = data_sf, 
-                        nmax = input$n_neighbors,
-                        set = list(idp = 0),
-                        model = vgm(psill = 0.5, model = model, range = input$range_param, nugget = 0.1))
+    # Conduct geospatial analysis using gstat
+    model <- vgm(psill = 0.5, model = input$model_option, range = input$range_param, nugget = 0.1)
+    res <- gstat(formula = as.formula(paste(analysis_var, "~ 1")), 
+                 data = data_sf,
+                 nmax = input$n_neighbors,
+                 model = model)
     
+    # Predict the spatial distribution
+    grid <- terra::rast(mpsz, nrows = 690, ncols = 1075)
+    xy <- terra::xyFromCell(grid, 1:ncell(grid))
+    coop <- st_as_sf(as.data.frame(xy), coords = c("x", "y"), crs = st_crs(mpsz))
+    coop <- st_filter(coop, mpsz)
     resp <- predict(res, coop)
     
-    resp$x <- st_coordinates(resp)[, 1]
-    resp$y <- st_coordinates(resp)[, 2]
-    resp$pred <- resp$var1.pred
+    resp$x <- st_coordinates(resp1)[,1]
+    resp$y <- st_coordinates(resp1)[,2]
+    resp$pred <- resp1$var1.pred
     
-    pred <- terra::rasterize(resp, grid, 
-                             field = "pred", 
-                             fun = "mean")
+    pred <- terra::rasterize(resp, grid, field = "pred", fun = "mean")
     
-    # Plot the result
-    tmap_options(check.and.fix = TRUE)
+    # Plot using tmap
     tmap_mode("plot")
-    tm_shape(pred) + 
+    tm <- tm_shape(pred) +
       tm_raster(alpha = 0.6, palette = "viridis") +
-      tm_layout(main.title = "Distribution of Mean Temperature",
-                main.title.position = "center",
-                main.title.size = 1.2,
-                legend.height = 0.45, 
-                legend.width = 0.35,
-                frame = TRUE) +
+      tm_layout(main.title = paste("Geospatial Analysis Result:", input$analysis_variable)) +
       tm_compass(type = "8star", size = 2) +
       tm_scale_bar() +
       tm_grid(alpha = 0.2)
-   })
-  
-  
+    
+    # Print the plot to the Shiny app
+    print(tm)
+  })
   
   
   # Correlation

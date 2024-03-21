@@ -48,7 +48,11 @@ fluidPage(
     tabPanel("Dashboard", "Panel two contents"),
     
     "Exploratory Data Analysis",
-    tabPanel("Time Series Analysis", "Panel 6 contents"),
+    tabPanel("Time Series Analysis", 
+             "Panel 6 contents"
+             
+             
+    ),
     
     tabPanel("Geospatial Analysis",
              sidebarLayout(
