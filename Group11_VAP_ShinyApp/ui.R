@@ -42,6 +42,7 @@ fluidPage(
   
   navlistPanel(
     id = "tabset",
+    widths = c(2,6),
     
     "Overview",
     tabPanel("Introduction", "Panel one contents"),
@@ -158,14 +159,18 @@ fluidPage(
                ),  #sideabrpanel
                
                # After sidebarPanel
-               # Main panel for displaying outputs ----
-               navset_card_underline(
-                 # Panel for Temperature ----
-                 nav_panel("Temperature", plotOutput("temp_station")),
+               # Main panel for displaying outputs
+               mainPanel(
+                 width = 8,
+                 fluid = FALSE,
+                 navset_card_underline(
+                   # Panel for Temperature
+                   nav_panel("Temperature", plotOutput("temp_station")),
                  
-                 # Panel for Rainfall ----
-                 nav_panel("Rainfall", plotOutput("rf_station"))
-               ) # navset_card_underline
+                   # Panel for Rainfall
+                   nav_panel("Rainfall", plotOutput("rf_station"))
+                   ) # navset_card_underline
+                 ) #mainpanel
              ) # sidebarLayout
     ), # tabpanel
     
@@ -200,14 +205,15 @@ fluidPage(
                  actionButton("showPlotButton", "Plot")
                ), #sidebarPanel
                
-               # Main panel for displaying outputs ----
-               navset_card_underline(
-                 # Panel for Temperature ----
-                 nav_panel("Temperature", plotOutput("temp_station")),
-                 
-                 # Panel for Rainfall ----
-                 nav_panel("Rainfall", plotOutput("rf_station"))
-               ) #navset_card_underline
+               # Main panel for displaying outputs
+               mainPanel(
+                 navset_card_underline(
+                   # Panel for Temperature
+                   nav_panel("Temperature", plotOutput("temp_station")),
+                   # Panel for Rainfall
+                   nav_panel("Rainfall", plotOutput("rf_station"))
+                   ) # navset_card_underline
+                 ) # mainpanel
              ) # sidebarLayout
     ), # tabpanel
 
