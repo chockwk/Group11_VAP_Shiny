@@ -106,8 +106,110 @@ fluidPage(
                 
 
     "Confirmatory Data Analysis",
-    tabPanel("Distribution", "Panel 8 contents"),
-    tabPanel("Statistical Testing", "Panel 9 contents"),
+    tabPanel("By Station",
+             sidebarLayout(
+               sidebarPanel(
+                 selectizeInput("station", "Select 3 Stations", c("Admiralty",
+                                                                  "Ang Mo Kio",
+                                                                  "Boon Lay (East)",
+                                                                  "Changi",
+                                                                  "Choa Chu Kang (South)",
+                                                                  "Clementi",
+                                                                  "East Coast Parkway",
+                                                                  "Jurong (West)",
+                                                                  "Khatib",
+                                                                  "Marina Barrage",
+                                                                  "Newton",
+                                                                  "Pasir Panjang",
+                                                                  "Paya Lebar",
+                                                                  "Seletar",
+                                                                  "Sembawang",
+                                                                  "Tai Seng",
+                                                                  "Tengah",
+                                                                  "Tuas South"),
+                                multiple = TRUE,
+                                options = list(maxItems = 3)),
+                 selectInput("measurement", "Measurement", c("Monthly", "Annual"), 
+                             selected = "Monthly"),
+                 selectInput("metric", "Metric", c("Average of Mean Temperature" = "Avg_Mean_Temp",
+                                                   "Average of Max Temperature" = "Avg_Max_Temp",
+                                                   "Average of Minimum Temperature" = "Avg_Min_Temp",
+                                                   "Maximum Temperature" = "Max_Temp",
+                                                   "Minimum Temperature" = "Min_Temp"),
+                             selected = "Average of Mean Temperature"),
+                 selectInput("plot_type", "Plot Type", c("Box Violin" = "boxviolin", 
+                                                         "Box" = "box", 
+                                                         "Violin" = "violin"), 
+                             selected = "Box Violin"),
+                 selectInput("test_type", "Test Type", c("Non-parametric" = "nonparametric", 
+                                                         "Parametric" = "parametric", 
+                                                         "Robust" = "robust", 
+                                                         "Bayes" = "bayes"),
+                             selected = "Non-parametric"),
+                 selectInput("pair_display", "Pair Display", c("Significant" = "significant",
+                                                               "Non-Significant" = "non-significant",
+                                                               "Everything" = "everything",
+                                                               "All" = "all"),
+                             selected = "Significant"),
+                 radioButtons("conf_inv", "Confidnence Interval", c("95%" = "0.95",
+                                                                    "99%" = "0.99"),
+                              selected = "95%"),
+                 actionButton("showPlotButton", "Plot")
+               ),  #sideabrpanel
+               
+               # After sidebarPanel
+               # Main panel for displaying outputs ----
+               navset_card_underline(
+                 # Panel for Temperature ----
+                 nav_panel("Temperature", plotOutput("temp_station")),
+                 
+                 # Panel for Rainfall ----
+                 nav_panel("Rainfall", plotOutput("rf_station"))
+               ) # navset_card_underline
+             ) # sidebarLayout
+    ), # tabpanel
+    
+    tabPanel("By Region", 
+             sidebarLayout(
+               sidebarPanel(
+                 selectInput("measurement", "Measurement", c("Monthly", "Annual"), 
+                             selected = "Monthly"),
+                 selectInput("metric", "Metric", c("Average of Mean Temperature" = "Avg_Mean_Temp",
+                                                   "Average of Max Temperature" = "Avg_Max_Temp",
+                                                   "Average of Minimum Temperature" = "Avg_Min_Temp",
+                                                   "Maximum Temperature" = "Max_Temp",
+                                                   "Minimum Temperature" = "Min_Temp"),
+                             selected = "Average of Mean Temperature"),
+                 selectInput("plot_type", "Plot Type", c("Box Violin" = "boxviolin", 
+                                                         "Box" = "box", 
+                                                         "Violin" = "violin"), 
+                             selected = "Box Violin"),
+                 selectInput("test_type", "Test Type", c("Non-parametric" = "nonparametric", 
+                                                         "Parametric" = "parametric", 
+                                                         "Robust" = "robust", 
+                                                         "Bayes" = "bayes"),
+                             selected = "Non-parametric"),
+                 selectInput("pair_display", "Pair Display", c("Significant" = "significant",
+                                                               "Non-Significant" = "non-significant",
+                                                               "Everything" = "everything",
+                                                               "All" = "all"),
+                             selected = "Significant"),
+                 radioButtons("conf_inv", "Confidnence Interval", c("95%" = "0.95",
+                                                                    "99%" = "0.99"),
+                              selected = "95%"),
+                 actionButton("showPlotButton", "Plot")
+               ), #sidebarPanel
+               
+               # Main panel for displaying outputs ----
+               navset_card_underline(
+                 # Panel for Temperature ----
+                 nav_panel("Temperature", plotOutput("temp_station")),
+                 
+                 # Panel for Rainfall ----
+                 nav_panel("Rainfall", plotOutput("rf_station"))
+               ) #navset_card_underline
+             ) # sidebarLayout
+    ), # tabpanel
 
     "Forecasting",
     tabPanel("Time Series Forecasting", 
