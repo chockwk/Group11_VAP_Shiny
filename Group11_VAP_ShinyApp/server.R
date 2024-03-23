@@ -47,6 +47,62 @@ Rain_YM_allR <- rain_data %>%
   ungroup() %>% 
   filter(!is.na(TotalRain))
 
+### ---- Data prep for CDA ----
+
+Temp_Annual <- temp_data %>%
+  group_by(Station, Region, Year) %>%
+  summarise(Avg_Mean_Temp = round(mean(MeanTemp, na.rm = TRUE),1),
+            Avg_Max_Temp = round(mean(MaxTemp, na.rm = TRUE),1),
+            Avg_Min_Temp = round(mean(MinTemp, na.rm = TRUE),1),
+            Max_Temp = round(max(MaxTemp, na.rm = TRUE),1),
+            Min_Temp = round(min(MinTemp, na.rm = TRUE),1)) %>%
+  distinct() %>%
+  ungroup() %>%
+  filter(!is.na(Avg_Mean_Temp))
+
+Temp_Monthly <- temp_data %>%
+  group_by(Station, Region, Year, Month) %>%
+  summarise(Avg_Mean_Temp = round(mean(MeanTemp, na.rm = TRUE),1),
+            Avg_Max_Temp = round(mean(MaxTemp, na.rm = TRUE),1),
+            Avg_Min_Temp = round(mean(MinTemp, na.rm = TRUE),1),
+            Max_Temp = round(max(MaxTemp, na.rm = TRUE),1),
+            Min_Temp = round(min(MinTemp, na.rm = TRUE),1)) %>%
+  distinct() %>%
+  ungroup() %>%
+  filter(!is.na(Avg_Mean_Temp))
+
+Rainfall_Annual <- rain_data %>%
+  group_by(Station, Region, Year) %>% 
+  reframe(Total_Rf = round(sum(TotalRainfall, na.rm = TRUE),1),
+          Total_Rf_30 = round(sum(TotalRainfall30, na.rm = TRUE),1),
+          Total_Rf_60 = round(sum(TotalRainfall60, na.rm = TRUE),1),
+          Total_Rf_120 = round(sum(TotalRainfall120, na.rm = TRUE),1),
+          Avg_Total_Rf = round(mean(TotalRainfall, na.rm = TRUE),1),
+          Avg_Total_Rf30 = round(mean(TotalRainfall30, na.rm = TRUE),1),
+          Avg_Total_Rf60 = round(mean(TotalRainfall60, na.rm = TRUE),1),
+          Avg_Total_Rf120 = round(mean(TotalRainfall120, na.rm = TRUE),1),
+          Min_Total_Rf = round(min(TotalRainfall, na.rm = TRUE),1),
+          Max_Total_Rf = round(max(TotalRainfall, na.rm = TRUE),1)) %>% 
+  distinct() %>% 
+  ungroup() %>% 
+  filter(!is.na(Total_Rf))
+
+Rainfall_Monthly <- rain_data %>%
+  group_by(Station, Region, Year, Month) %>% 
+  reframe(Total_Rf = round(sum(TotalRainfall, na.rm = TRUE),1),
+          Total_Rf_30 = round(sum(TotalRainfall30, na.rm = TRUE),1),
+          Total_Rf_60 = round(sum(TotalRainfall60, na.rm = TRUE),1),
+          Total_Rf_120 = round(sum(TotalRainfall120, na.rm = TRUE),1),
+          Avg_Total_Rf = round(mean(TotalRainfall, na.rm = TRUE),1),
+          Avg_Total_Rf30 = round(mean(TotalRainfall30, na.rm = TRUE),1),
+          Avg_Total_Rf60 = round(mean(TotalRainfall60, na.rm = TRUE),1),
+          Avg_Total_Rf120 = round(mean(TotalRainfall120, na.rm = TRUE),1),
+          Min_Total_Rf = round(min(TotalRainfall, na.rm = TRUE),1),
+          Max_Total_Rf = round(max(TotalRainfall, na.rm = TRUE),1)) %>% 
+  distinct() %>% 
+  ungroup() %>% 
+  filter(!is.na(Total_Rf))
+
 # Correlation
 
 weather_YM <- merge(rain_data, temp_data, by=c("Station", "Region", "Year", "Month", "Date"))
