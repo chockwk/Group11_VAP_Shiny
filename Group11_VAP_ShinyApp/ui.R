@@ -75,7 +75,7 @@ fluidPage(
                              choices = c(1, 2, 3, 4),
                              selected = 1
                  ),
-               actionButton("showPlotButton", "Plot")
+               actionButton("GS_Button", "Plot")
              ),
              mainPanel(
                width = 9,
@@ -100,7 +100,7 @@ fluidPage(
                  selectInput("marginal_type", "Marginal Distribution Type:", 
                              choices = c("histogram", "boxplot", "density", "violin", "densigram")
                  ),
-                 actionButton("showPlotButton", "Plot")
+                 actionButton("CorrPlot_Button", "Plot")
                ),
                mainPanel(
                  width = 9,
@@ -157,10 +157,10 @@ fluidPage(
                                                                "Everything" = "everything",
                                                                "All" = "all"),
                              selected = "Significant"),
-                 radioButtons("conf_inv", "Confidnence Interval", c("95%" = "0.95",
-                                                                    "99%" = "0.99"),
-                              selected = "95%"),
-                 actionButton("showPlotButton", "Plot")
+                 radioButtons("conf_inv", "Select the confidence level (%):", c("95" = 0.95,
+                                                                                "99" = 0.99),
+                              selected = "95"),
+                 actionButton("ByStation_Button", "Plot")
                ),  #sideabrpanel
                
                # After sidebarPanel
@@ -170,10 +170,10 @@ fluidPage(
                  fluid = FALSE,
                  navset_card_underline(
                    # Panel for Temperature
-                   nav_panel("Temperature", plotOutput("temp_station")),
+                   nav_panel("Temperature", plotOutput("station_temp")),
                  
                    # Panel for Rainfall
-                   nav_panel("Rainfall", plotOutput("rf_station"))
+                   nav_panel("Rainfall", plotOutput("station_rf"))
                    ) # navset_card_underline
                  ) #mainpanel
              ) # sidebarLayout
@@ -205,10 +205,11 @@ fluidPage(
                                                                "Everything" = "everything",
                                                                "All" = "all"),
                              selected = "Significant"),
-                 radioButtons("conf_inv", "Confidnence Interval", c("95%" = "0.95",
-                                                                    "99%" = "0.99"),
-                              selected = "95%"),
-                 actionButton("showPlotButton", "Plot")
+                 radioButtons("conf_inv", 
+                              "Select the confidence level (%):", 
+                              c("95" = 0.95, "99" = 0.99),
+                              selected = "95"),
+                 actionButton("ByRegion_Button", "Plot")
                ), #sidebarPanel
                
                # Main panel for displaying outputs
@@ -216,9 +217,9 @@ fluidPage(
                  width = 9,
                  navset_card_underline(
                    # Panel for Temperature
-                   nav_panel("Temperature", plotOutput("temp_station")),
+                   nav_panel("Temperature", plotOutput("region_temp")),
                    # Panel for Rainfall
-                   nav_panel("Rainfall", plotOutput("rf_station"))
+                   nav_panel("Rainfall", plotOutput("region_rf"))
                    ) # navset_card_underline
                  ) # mainpanel
              ) # sidebarLayout
@@ -255,7 +256,7 @@ fluidPage(
                               choices = c("90", "95", "99"),
                               selected = "90"
                  ),
-                 actionButton("showPlotButton", "Forecast")
+                 actionButton("Forecast_Button", "Forecast")
                ),
                mainPanel(
                  width = 9,

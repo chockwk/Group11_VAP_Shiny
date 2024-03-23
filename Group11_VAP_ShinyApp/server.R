@@ -1,4 +1,4 @@
-pacman::p_load(shiny, tidyverse, dplyr, readr, plotly, forecast, stats, zoo, shinyjs, ggstatsplot, sf, tmap, terra, gstat, viridis, automap, sp, spacetime, raster)
+pacman::p_load(shiny, tidyverse, ggrepel, plotly, forecast, stats, zoo, shinyjs, ggstatsplot, sf, tmap, terra, viridis, sp, raster, gstat, automap)
 
 # import data
 temp_data <-read_rds("data/rds/temperature.rds")
@@ -212,24 +212,60 @@ function(input, output, session) {
     })
   }
   
-  observeEvent(input$showPlotButton, {
+  observeEvent(input$CorrPlot_Button, {
     plotcorrelation(input$variable, input$method, input$association_type, input$marginal_type)
   })
   
+  # CDA
+  
+  plot_station_temp <- function(measurement, 
+                                selected_stations = c("Admiralty", "Ang Mo Kio", "Boon Lay (East)"), 
+                                metric = "Avg_Mean_Temp", 
+                                p_type = "boxviolin", 
+                                t_type = "nonparametric", 
+                                pair_disp = "significant", 
+                                conf = 0.95) {
+    if (measurement == "Monthly") {
+      data <- Temp_Monthly %>%
+        filter(Station %in% selected_stations)}
+    else {data <- Temp_Annual %>%
+      filter(Station %in% selected_stations)}
+    
+    
+    output$station_temp <- renderPlot({
+      ggbetweenstats(
+        data = data,
+        x = Station,
+        y = !!sym(metric),
+        plot.type = p_type,
+        type = t_type,
+        pairwise.display = pair_disp)
+    })
+  }
+  
+  observeEvent(input$ByStation_Button, {
+    plot_station_temp(input$measurement, 
+                      input$station,
+                      input$metric,
+                      input$plot_type,
+                      input$test_type,
+                      input$pair_display,
+                      input$conf_inv)
+  })
   
   # Forecast
   
   forecastPlotReady <- reactiveValues(ok = FALSE)
 
   observeEvent(input$showPlotButton, {
-    shinyjs::disable("showPlotButton")
+    shinyjs::disable("Forecast_Button")
     Sys.sleep(2)  # Simulate some processing time
     forecastPlotReady$ok <- TRUE
   })
   
   output$plotForecast <- renderPlotly({
     if (forecastPlotReady$ok) {
-      shinyjs::enable("showPlotButton")
+      shinyjs::enable("Forecast_Button")
       
       if (input$variable == "Temperature") {
           if (input$region != "All") {
