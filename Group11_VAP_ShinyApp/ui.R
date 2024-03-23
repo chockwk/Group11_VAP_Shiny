@@ -42,7 +42,7 @@ fluidPage(
   
   navlistPanel(
     id = "tabset",
-    widths = c(2,6),
+    widths = c(2,10),
     
     "Overview",
     tabPanel("Introduction", "Panel one contents"),
@@ -58,6 +58,7 @@ fluidPage(
     tabPanel("Geospatial Analysis",
              sidebarLayout(
                sidebarPanel(
+                 width = 3,
                  selectInput("analysis_variable", "Variable:",
                              choices = c("Temperature", "Rainfall")
                  ),
@@ -77,6 +78,7 @@ fluidPage(
                actionButton("showPlotButton", "Plot")
              ),
              mainPanel(
+               width = 9,
                plotOutput("geo_plot")
              )
            )
@@ -85,6 +87,7 @@ fluidPage(
     tabPanel("Correlation", 
              sidebarLayout(
                sidebarPanel(
+                 width = 3,
                  selectInput("variable", "Choose a grouping variable:",
                              choices = c("Station", "Region")
                  ),
@@ -100,6 +103,7 @@ fluidPage(
                  actionButton("showPlotButton", "Plot")
                ),
                mainPanel(
+                 width = 9,
                  plotOutput("correlationPlot")
                )
              )
@@ -110,6 +114,7 @@ fluidPage(
     tabPanel("By Station",
              sidebarLayout(
                sidebarPanel(
+                 width = 3,
                  selectizeInput("station", "Select 3 Stations", c("Admiralty",
                                                                   "Ang Mo Kio",
                                                                   "Boon Lay (East)",
@@ -161,7 +166,7 @@ fluidPage(
                # After sidebarPanel
                # Main panel for displaying outputs
                mainPanel(
-                 width = 8,
+                 width = 9,
                  fluid = FALSE,
                  navset_card_underline(
                    # Panel for Temperature
@@ -177,6 +182,7 @@ fluidPage(
     tabPanel("By Region", 
              sidebarLayout(
                sidebarPanel(
+                 width = 3,
                  selectInput("measurement", "Measurement", c("Monthly", "Annual"), 
                              selected = "Monthly"),
                  selectInput("metric", "Metric", c("Average of Mean Temperature" = "Avg_Mean_Temp",
@@ -207,6 +213,7 @@ fluidPage(
                
                # Main panel for displaying outputs
                mainPanel(
+                 width = 9,
                  navset_card_underline(
                    # Panel for Temperature
                    nav_panel("Temperature", plotOutput("temp_station")),
@@ -221,6 +228,7 @@ fluidPage(
     tabPanel("Time Series Forecasting", 
              sidebarLayout(
                sidebarPanel(
+                 width = 3,
                  selectInput(inputId = "variable",
                              label = "Select variable to forecast",
                              choices = c("Temperature", "Rainfall"),
@@ -250,6 +258,7 @@ fluidPage(
                  actionButton("showPlotButton", "Forecast")
                ),
                mainPanel(
+                 width = 9,
                  plotlyOutput("plotForecast")
                )
              )
