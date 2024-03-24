@@ -145,117 +145,257 @@ fluidPage(
 
     "Confirmatory Data Analysis",
     tabPanel("By Station",
-             sidebarLayout(
-               sidebarPanel(
-                 width = 3,
-                 selectizeInput("station", "Select 3 Stations", c("Admiralty",
-                                                                  "Ang Mo Kio",
-                                                                  "Boon Lay (East)",
-                                                                  "Changi",
-                                                                  "Choa Chu Kang (South)",
-                                                                  "Clementi",
-                                                                  "East Coast Parkway",
-                                                                  "Jurong (West)",
-                                                                  "Khatib",
-                                                                  "Marina Barrage",
-                                                                  "Newton",
-                                                                  "Pasir Panjang",
-                                                                  "Paya Lebar",
-                                                                  "Seletar",
-                                                                  "Sembawang",
-                                                                  "Tai Seng",
-                                                                  "Tengah",
-                                                                  "Tuas South"),
-                                multiple = TRUE,
-                                options = list(maxItems = 3)),
-                 selectInput("measurement", "Measurement", c("Monthly", "Annual"), 
-                             selected = "Monthly"),
-                 selectInput("metric", "Metric", c("Average of Mean Temperature" = "Avg_Mean_Temp",
-                                                   "Average of Max Temperature" = "Avg_Max_Temp",
-                                                   "Average of Minimum Temperature" = "Avg_Min_Temp",
-                                                   "Maximum Temperature" = "Max_Temp",
-                                                   "Minimum Temperature" = "Min_Temp"),
-                             selected = "Average of Mean Temperature"),
-                 selectInput("plot_type", "Plot Type", c("Box Violin" = "boxviolin", 
-                                                         "Box" = "box", 
-                                                         "Violin" = "violin"), 
-                             selected = "Box Violin"),
-                 selectInput("test_type", "Test Type", c("Non-parametric" = "nonparametric", 
-                                                         "Parametric" = "parametric", 
-                                                         "Robust" = "robust", 
-                                                         "Bayes" = "bayes"),
-                             selected = "Non-parametric"),
-                 selectInput("pair_display", "Pair Display", c("Significant" = "significant",
-                                                               "Non-Significant" = "non-significant",
-                                                               "Everything" = "everything",
-                                                               "All" = "all"),
-                             selected = "Significant"),
-                 radioButtons("conf_inv", "Select the confidence level (%):", c("95" = 0.95,
-                                                                                "99" = 0.99),
-                              selected = "95"),
-                 actionButton("ByStation_Button", "Plot")
-               ),  #sideabrpanel
-               
-               # After sidebarPanel
-               # Main panel for displaying outputs
-               mainPanel(
-                 width = 9,
-                 fluid = FALSE,
-                 navset_card_underline(
-                   # Panel for Temperature
-                   nav_panel("Temperature", plotOutput("station_temp")),
+             # Main panel for displaying outputs
+             mainPanel(
+               width = 12,
+               navset_card_underline(
+                 # Panel for Temperature
+                 nav_panel("Temperature", 
+                           sidebarLayout(
+                             sidebarPanel(
+                               width = 3,
+                               tags$style(type='text/css', ".selectize-dropdown-content {max-height: 800px; }"),
+                               selectizeInput("s_temp_station", "Select 5 Stations", c("Admiralty",
+                                                                                       "Ang Mo Kio",
+                                                                                       "Boon Lay (East)",
+                                                                                       "Changi",
+                                                                                       "Choa Chu Kang (South)",
+                                                                                       "Clementi",
+                                                                                       "East Coast Parkway",
+                                                                                       "Jurong (West)",
+                                                                                       "Khatib",
+                                                                                       "Marina Barrage",
+                                                                                       "Newton",
+                                                                                       "Pasir Panjang",
+                                                                                       "Paya Lebar",
+                                                                                       "Seletar",
+                                                                                       "Sembawang",
+                                                                                       "Tai Seng",
+                                                                                       "Tengah",
+                                                                                       "Tuas South"),
+                                              multiple = TRUE,
+                                              options = list(maxItems = 5)),
+                               
+                               selectInput("s_temp_measurement", "Measurement", c("Monthly", "Annual"), 
+                                           selected = "Monthly"),
+                               
+                               selectInput("s_temp_metric", "Metric", c("Average of Mean Temperature" = "Avg_Mean_Temp",
+                                                                        "Average of Max Temperature" = "Avg_Max_Temp",
+                                                                        "Average of Minimum Temperature" = "Avg_Min_Temp",
+                                                                        "Maximum Temperature" = "Max_Temp",
+                                                                        "Minimum Temperature" = "Min_Temp"), 
+                                           selected = "Average of Mean Temperature"),
+                               
+                               selectInput("s_temp_plot_type", "Plot Type", c("Box Violin" = "boxviolin", 
+                                                                              "Box" = "box", 
+                                                                              "Violin" = "violin"), 
+                                           selected = "Box Violin"),
+                               
+                               selectInput("s_temp_test_type", "Test Type", c("Non-parametric" = "nonparametric", 
+                                                                              "Parametric" = "parametric", 
+                                                                              "Robust" = "robust", 
+                                                                              "Bayes" = "bayes"),
+                                           selected = "Non-parametric"),
+                               
+                               selectInput("s_temp_pair_display", "Pair Display", c("Significant" = "significant",
+                                                                                    "Non-Significant" = "non-significant",
+                                                                                    "Everything" = "everything",
+                                                                                    "All" = "all"),
+                                           selected = "Significant"),
+                               
+                               radioButtons("s_temp_conf_inv", "Confidence Interval", c("90" = 0.9,
+                                                                                        "95" = 0.95,
+                                                                                        "99" = 0.99),
+                                            selected = 0.95),
+                               
+                               actionButton("show_station_temp", "Plot")
+                             ),  #sideabrpanel
+                             
+                             plotOutput("station_temp",
+                                        width = "1125px", height = "800px")
+                           ) # sidebarlayout
+                 ), # nav_panel
                  
-                   # Panel for Rainfall
-                   nav_panel("Rainfall", plotOutput("station_rf"))
-                   ) # navset_card_underline
-                 ) #mainpanel
-             ) # sidebarLayout
+                 # Panel for Rainfall
+                 nav_panel("Rainfall", 
+                           sidebarLayout(
+                             sidebarPanel(
+                               width = 3,
+                               tags$style(type='text/css', ".selectize-dropdown-content {max-height: 800px; }"),
+                               selectizeInput("s_rf_station", "Select 5 Stations", c("Admiralty",
+                                                                                     "Ang Mo Kio",
+                                                                                     "Boon Lay (East)",
+                                                                                     "Changi",
+                                                                                     "Choa Chu Kang (South)",
+                                                                                     "Clementi",
+                                                                                     "East Coast Parkway",
+                                                                                     "Jurong (West)",
+                                                                                     "Khatib",
+                                                                                     "Marina Barrage",
+                                                                                     "Newton",
+                                                                                     "Pasir Panjang",
+                                                                                     "Paya Lebar",
+                                                                                     "Seletar",
+                                                                                     "Sembawang",
+                                                                                     "Tai Seng",
+                                                                                     "Tengah",
+                                                                                     "Tuas South"),
+                                              multiple = TRUE,
+                                              options = list(maxItems = 5),
+                                              tags$style(type='text/css', ".selectize-dropdown-content {max-height: 400px; }")),
+                               
+                               selectInput("s_rf_measurement", "Measurement", c("Monthly", "Annual"), 
+                                           selected = "Monthly"),
+                               
+                               selectInput("s_rf_metric", "Metric", c("Total Rainfall" = "Total_Rf", 
+                                                                      "Total Rainfall (30 min)" = "Total_Rf_30",
+                                                                      "Total Rainfall (60 min)" = "Total_Rf_60",
+                                                                      "Total Rainfall (120 min)" = "Total_Rf_120",
+                                                                      "Average of Total Rainfall" = "Avg_Total_Rf",
+                                                                      "Average of Total Rainfall (30 min)" = "Avg_Total_Rf30",
+                                                                      "Average of Total Rainfall (60 min)" = "Avg_Total_Rf60",
+                                                                      "Average of Total Rainfall (120 min)" = "Avg_Total_Rf120",
+                                                                      "Minimum of Total Rainfall" = "Min_Total_Rf",
+                                                                      "Maximum of Total Rainfall" = "Max_Total_Rf"), 
+                                           selected = "Total Rainfall"),
+                               
+                               selectInput("s_rf_plot_type", "Plot Type", c("Box Violin" = "boxviolin", 
+                                                                            "Box" = "box", 
+                                                                            "Violin" = "violin"), 
+                                           selected = "Box Violin"),
+                               
+                               selectInput("s_rf_test_type", "Test Type", c("Non-parametric" = "nonparametric", 
+                                                                            "Parametric" = "parametric",
+                                                                            "Robust" = "robust", 
+                                                                            "Bayes" = "bayes"),
+                                           selected = "Non-parametric"),
+                               
+                               selectInput("s_rf_pair_display", "Pair Display", c("Significant" = "significant",
+                                                                                  "Non-Significant" = "non-significant",
+                                                                                  "Everything" = "everything",
+                                                                                  "All" = "all"),
+                                           selected = "Significant"),
+                               
+                               radioButtons("s_rf_conf_inv", "Confidence Interval", c("90" = 0.9,
+                                                                                      "95" = 0.95,
+                                                                                      "99" = 0.99),
+                                            selected = 0.95),
+                               
+                               actionButton("show_station_rf", "Plot")
+                               
+                             ),  #sideabrpanel
+                             
+                             plotOutput("station_rf",
+                                        width = "1125px", height = "800px")
+                           ) # sidebarlayout
+                 ) # nav_panel
+               ) # navset_card_underline
+             ) # mainpanel
     ), # tabpanel
     
     tabPanel("By Region", 
-             sidebarLayout(
-               sidebarPanel(
-                 width = 3,
-                 selectInput("measurement", "Measurement", c("Monthly", "Annual"), 
-                             selected = "Monthly"),
-                 selectInput("metric", "Metric", c("Average of Mean Temperature" = "Avg_Mean_Temp",
-                                                   "Average of Max Temperature" = "Avg_Max_Temp",
-                                                   "Average of Minimum Temperature" = "Avg_Min_Temp",
-                                                   "Maximum Temperature" = "Max_Temp",
-                                                   "Minimum Temperature" = "Min_Temp"),
-                             selected = "Average of Mean Temperature"),
-                 selectInput("plot_type", "Plot Type", c("Box Violin" = "boxviolin", 
-                                                         "Box" = "box", 
-                                                         "Violin" = "violin"), 
-                             selected = "Box Violin"),
-                 selectInput("test_type", "Test Type", c("Non-parametric" = "nonparametric", 
-                                                         "Parametric" = "parametric", 
-                                                         "Robust" = "robust", 
-                                                         "Bayes" = "bayes"),
-                             selected = "Non-parametric"),
-                 selectInput("pair_display", "Pair Display", c("Significant" = "significant",
-                                                               "Non-Significant" = "non-significant",
-                                                               "Everything" = "everything",
-                                                               "All" = "all"),
-                             selected = "Significant"),
-                 radioButtons("conf_inv", 
-                              "Select the confidence level (%):", 
-                              c("95" = 0.95, "99" = 0.99),
-                              selected = "95"),
-                 actionButton("ByRegion_Button", "Plot")
-               ), #sidebarPanel
-               
-               # Main panel for displaying outputs
-               mainPanel(
-                 width = 9,
-                 navset_card_underline(
-                   # Panel for Temperature
-                   nav_panel("Temperature", plotOutput("region_temp")),
-                   # Panel for Rainfall
-                   nav_panel("Rainfall", plotOutput("region_rf"))
-                   ) # navset_card_underline
-                 ) # mainpanel
-             ) # sidebarLayout
+             mainPanel(
+               width = 12,
+               navset_card_underline(
+                 # Panel for Temperature
+                 nav_panel("Temperature", 
+                           sidebarLayout(
+                             sidebarPanel(
+                               width = 3,
+                               
+                               selectInput("r_temp_measurement", "Measurement", c("Monthly", "Annual"), 
+                                           selected = "Monthly"),
+                               
+                               selectInput("r_temp_metric", "Metric", c("Average of Mean Temperature" = "Avg_Mean_Temp",
+                                                                        "Average of Max Temperature" = "Avg_Max_Temp",
+                                                                        "Average of Minimum Temperature" = "Avg_Min_Temp",
+                                                                        "Maximum Temperature" = "Max_Temp",
+                                                                        "Minimum Temperature" = "Min_Temp"), 
+                                           selected = "Average of Mean Temperature"),
+                               
+                               selectInput("s_temp_plot_type", "Plot Type", c("Box Violin" = "boxviolin", 
+                                                                              "Box" = "box", 
+                                                                              "Violin" = "violin"), 
+                                           selected = "Box Violin"),
+                               
+                               selectInput("r_temp_test_type", "Test Type", c("Non-parametric" = "nonparametric", 
+                                                                              "Parametric" = "parametric", 
+                                                                              "Robust" = "robust", 
+                                                                              "Bayes" = "bayes"),
+                                           selected = "Non-parametric"),
+                               
+                               selectInput("r_temp_pair_display", "Pair Display", c("Significant" = "significant",
+                                                                                    "Non-Significant" = "non-significant",
+                                                                                    "Everything" = "everything",
+                                                                                    "All" = "all"),
+                                           selected = "Significant"),
+                               
+                               radioButtons("s_temp_conf_inv", "Confidence Interval", c("90" = 0.9,
+                                                                                        "95" = 0.95,
+                                                                                        "99" = 0.99),
+                                            selected = 0.95),
+                               
+                               actionButton("show_region_temp", "Plot")
+                             ),  #sideabrpanel
+                             
+                             plotOutput("region_temp",
+                                        width = "1125px", height = "800px")
+                           ) # sidebarlayout
+                 ), # nav_panel
+                 
+                 # Panel for Rainfall
+                 nav_panel("Rainfall", 
+                           sidebarLayout(
+                             sidebarPanel(
+                               width = 3,
+                               
+                               selectInput("r_rf_measurement", "Measurement", c("Monthly", "Annual"), 
+                                           selected = "Monthly"),
+                               
+                               selectInput("r_rf_metric", "Metric", c("Total Rainfall" = "Total_Rf", 
+                                                                      "Total Rainfall (30 min)" = "Total_Rf_30",
+                                                                      "Total Rainfall (60 min)" = "Total_Rf_60",
+                                                                      "Total Rainfall (120 min)" = "Total_Rf_120",
+                                                                      "Average of Total Rainfall" = "Avg_Total_Rf",
+                                                                      "Average of Total Rainfall (30 min)" = "Avg_Total_Rf30",
+                                                                      "Average of Total Rainfall (60 min)" = "Avg_Total_Rf60",
+                                                                      "Average of Total Rainfall (120 min)" = "Avg_Total_Rf120",
+                                                                      "Minimum of Total Rainfall" = "Min_Total_Rf",
+                                                                      "Maximum of Total Rainfall" = "Max_Total_Rf"), 
+                                           selected = "Total Rainfall"),
+                               
+                               selectInput("r_rf_plot_type", "Plot Type", c("Box Violin" = "boxviolin", 
+                                                                            "Box" = "box", 
+                                                                            "Violin" = "violin"), 
+                                           selected = "Box Violin"),
+                               
+                               selectInput("r_rf_test_type", "Test Type", c("Non-parametric" = "nonparametric", 
+                                                                            "Parametric" = "parametric",
+                                                                            "Robust" = "robust", 
+                                                                            "Bayes" = "bayes"),
+                                           selected = "Non-parametric"),
+                               
+                               selectInput("r_rf_pair_display", "Pair Display", c("Significant" = "significant",
+                                                                                  "Non-Significant" = "non-significant",
+                                                                                  "Everything" = "everything",
+                                                                                  "All" = "all"),
+                                           selected = "Significant"),
+                               
+                               radioButtons("r_rf_conf_inv", "Confidence Interval", c("90" = 0.9,
+                                                                                      "95" = 0.95,
+                                                                                      "99" = 0.99),
+                                            selected = 0.95),
+                               
+                               actionButton("show_region_rf", "Plot")
+                               
+                             ),  #sideabrpanel
+                             
+                             plotOutput("region_rf",
+                                        width = "1125px", height = "800px")
+                           ) # sidebarlayout
+                 ) # nav_panel
+               ) # navset_card_underline
+             ) # mainpanel
     ), # tabpanel
 
     "Forecasting",

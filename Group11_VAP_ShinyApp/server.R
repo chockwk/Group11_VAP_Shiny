@@ -390,7 +390,7 @@ function(input, output, session) {
     plotcorrelation(input$variable, input$method, input$association_type, input$marginal_type)
   })
   
-  # CDA
+  # CDA - Temperature by Station
   
   plot_station_temp <- function(measurement, 
                                 selected_stations = c("Admiralty", "Ang Mo Kio", "Boon Lay (East)"), 
@@ -401,30 +401,143 @@ function(input, output, session) {
                                 conf = 0.95) {
     if (measurement == "Monthly") {
       data <- Temp_Monthly %>%
-        filter(Station %in% selected_stations)}
-    else {data <- Temp_Annual %>%
-      filter(Station %in% selected_stations)}
+        filter(Station %in% selected_stations)
+    } else {data <- Temp_Annual %>%
+      filter(Station %in% selected_stations)
+    }
     
+    if (p_type == "box") {
+      v_width <- 0
+      b_width <- 0.3
+    } else if (p_type == "violin") {
+      v_width <- 0.5
+      b_width <- 0
+    } else {
+      v_width <- 0.5
+      b_width <- 0.3
+    }
     
     output$station_temp <- renderPlot({
+      
+      print(input$s_temp_metric)
+      ylab <- switch(input$s_temp_metric,
+                     "Avg_Mean_Temp" = "Average of Mean Temperature",
+                     "Avg_Max_Temp" = "Average of Max Temperature",
+                     "Avg_Min_Temp" = "Average of Minimum Temperature",
+                     "Max_Temp" = "Maximum Temperature",
+                     "Min_Temp" = "Minimum Temperature")
+      
+      if (input$s_temp_measurement == "Monthly") {
+        title <- paste("Monthly", ylab, "by Selected Stations")
+      } else {
+        title <- paste("Annual", ylab, "by Selected Stations")
+      }
+      
       ggbetweenstats(
         data = data,
         x = Station,
         y = !!sym(metric),
-        plot.type = p_type,
         type = t_type,
-        pairwise.display = pair_disp)
+        pairwise.display = pair_disp,
+        point.args = list(position = ggplot2::position_jitterdodge(dodge.width = 0.6), 
+                          alpha = 0.4, size = 5, stroke = 0, na.rm = TRUE),
+        boxplot.args = list(width = b_width, alpha = 0.2),
+        violin.args = list(width = v_width, alpha = 0.2),
+        xlab = "Station",
+        ylab = ylab,
+        title = title) +
+        theme(axis.text = element_text(size = 14),
+              axis.title.x = element_text(size = 18),
+              axis.title.y = element_text(size = 18),
+              plot.title = element_text(size = 25))
     })
   }
   
-  observeEvent(input$ByStation_Button, {
-    plot_station_temp(input$measurement, 
-                      input$station,
-                      input$metric,
-                      input$plot_type,
-                      input$test_type,
-                      input$pair_display,
-                      input$conf_inv)
+  observeEvent(input$show_station_temp, {
+    plot_station_temp(input$s_temp_measurement, 
+                      input$s_temp_station,
+                      input$s_temp_metric,
+                      input$s_temp_plot_type,
+                      input$s_temp_test_type,
+                      input$s_temp_pair_display,
+                      input$s_temp_conf_inv)
+  })
+  
+  # CDA - Rainfall by Station
+  
+  plot_station_rf <- function(measurement, 
+                              selected_stations = c("Admiralty", "Ang Mo Kio", "Boon Lay (East)"), 
+                              metric = "Total_Rf", 
+                              p_type = "boxviolin", 
+                              t_type = "nonparametric", 
+                              pair_disp = "significant", 
+                              conf = 0.95) {
+    if (measurement == "Monthly") {
+      data <- Rainfall_Monthly %>%
+        filter(Station %in% selected_stations)
+    } else {data <- Rainfall_Annual %>%
+      filter(Station %in% selected_stations)
+    }
+    
+    if (p_type == "box") {
+      v_width <- 0
+      b_width <- 0.3
+    } else if (p_type == "violin") {
+      v_width <- 0.5
+      b_width <- 0
+    } else {
+      v_width <- 0.5
+      b_width <- 0.3
+    }
+    
+    output$station_rf <- renderPlot({
+      
+      ylab <- switch(input$s_rf_metric,
+                     "Total_Rf" = "Total Rainfall",
+                     "Total_Rf_30" = "Total Rainfall (30 min)",
+                     "Total_Rf_60" = "Total Rainfall (60 min)",
+                     "Total_Rf_120" = "Total Rainfall (120 min)",
+                     "Average of Total Rainfall" = "Avg_Total_Rf",
+                     "Avg_Total_Rf30" = "Average of Total Rainfall (30 min)",
+                     "Avg_Total_Rf60" = "Average of Total Rainfall (60 min)",
+                     "Avg_Total_Rf120" = "Average of Total Rainfall (120 min)",
+                     "Min_Total_Rf" = "Minimum of Total Rainfall",
+                     "Max_Total_Rf" = "Maximum of Total Rainfall")
+      
+      if (input$s_rf_measurement == "Monthly") {
+        title <- paste("Monthly", ylab, "by Selected Stations")
+      } else {
+        title <- paste("Annual", ylab, "by Selected Stations")
+      }
+      
+      ggbetweenstats(
+        data = data,
+        x = Station,
+        y = !!sym(metric),
+        type = t_type,
+        pairwise.display = pair_disp,
+        point.args = list(position = ggplot2::position_jitterdodge(dodge.width = 0.6), 
+                          alpha = 0.4, size = 5, stroke = 0, na.rm = TRUE),
+        boxplot.args = list(width = b_width, alpha = 0.2),
+        violin.args = list(width = v_width, alpha = 0.2),
+        xlab = "Station",
+        ylab = ylab,
+        title = title) +
+        theme(axis.text = element_text(size = 14),
+              axis.title.x = element_text(size = 18),
+              axis.title.y = element_text(size = 18),
+              plot.title = element_text(size = 25))
+    })
+  }
+  
+  observeEvent(input$show_station_rf, {
+    plot_station_rf(input$s_rf_measurement, 
+                    input$s_rf_station,
+                    input$s_rf_metric,
+                    input$s_rf_plot_type,
+                    input$s_rf_test_type,
+                    input$s_rf_pair_display,
+                    input$s_rf_conf_inv)
   })
   
   # Forecast
