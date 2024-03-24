@@ -186,9 +186,9 @@ fluidPage(
                                                                         "Minimum Temperature" = "Min_Temp"), 
                                            selected = "Average of Mean Temperature"),
                                
-                               selectInput("s_temp_plot_type", "Plot Type", c("Box Violin" = "boxviolin", 
-                                                                              "Box" = "box", 
-                                                                              "Violin" = "violin"), 
+                               selectInput("s_temp_plot_type", "Plot Type", c("Box Violin", 
+                                                                              "Box", 
+                                                                              "Violin"), 
                                            selected = "Box Violin"),
                                
                                selectInput("s_temp_test_type", "Test Type", c("Non-parametric" = "nonparametric", 
@@ -203,16 +203,19 @@ fluidPage(
                                                                                     "All" = "all"),
                                            selected = "Significant"),
                                
-                               radioButtons("s_temp_conf_inv", "Confidence Interval", c("90" = 0.9,
-                                                                                        "95" = 0.95,
-                                                                                        "99" = 0.99),
+                               radioButtons("s_temp_conf_inv", "Confidence Level", c("90%" = 0.9,
+                                                                                     "95%" = 0.95,
+                                                                                     "99%" = 0.99),
                                             selected = 0.95),
+                               
+                               sliderInput("s_temp_psize", "Font Size for p-value", 3, 10,
+                                           value = 5),
                                
                                actionButton("show_station_temp", "Plot")
                              ),  #sideabrpanel
                              
                              plotOutput("station_temp",
-                                        width = "1125px", height = "800px")
+                                        width = "1125px", height = "900px")
                            ) # sidebarlayout
                  ), # nav_panel
                  
@@ -241,8 +244,7 @@ fluidPage(
                                                                                      "Tengah",
                                                                                      "Tuas South"),
                                               multiple = TRUE,
-                                              options = list(maxItems = 5),
-                                              tags$style(type='text/css', ".selectize-dropdown-content {max-height: 400px; }")),
+                                              options = list(maxItems = 5)),
                                
                                selectInput("s_rf_measurement", "Measurement", c("Monthly", "Annual"), 
                                            selected = "Monthly"),
@@ -259,9 +261,9 @@ fluidPage(
                                                                       "Maximum of Total Rainfall" = "Max_Total_Rf"), 
                                            selected = "Total Rainfall"),
                                
-                               selectInput("s_rf_plot_type", "Plot Type", c("Box Violin" = "boxviolin", 
-                                                                            "Box" = "box", 
-                                                                            "Violin" = "violin"), 
+                               selectInput("s_rf_plot_type", "Plot Type", c("Box Violin", 
+                                                                            "Box", 
+                                                                            "Violin"), 
                                            selected = "Box Violin"),
                                
                                selectInput("s_rf_test_type", "Test Type", c("Non-parametric" = "nonparametric", 
@@ -276,17 +278,20 @@ fluidPage(
                                                                                   "All" = "all"),
                                            selected = "Significant"),
                                
-                               radioButtons("s_rf_conf_inv", "Confidence Interval", c("90" = 0.9,
-                                                                                      "95" = 0.95,
-                                                                                      "99" = 0.99),
+                               radioButtons("s_rf_conf_inv", "Confidence Level", c("90%" = 0.9,
+                                                                                   "95%" = 0.95,
+                                                                                   "99%" = 0.99),
                                             selected = 0.95),
+                               
+                               sliderInput("s_rf_psize", "Font Size for p-value", 3, 10,
+                                           value = 5),
                                
                                actionButton("show_station_rf", "Plot")
                                
                              ),  #sideabrpanel
                              
                              plotOutput("station_rf",
-                                        width = "1125px", height = "800px")
+                                        width = "1125px", height = "900px")
                            ) # sidebarlayout
                  ) # nav_panel
                ) # navset_card_underline
@@ -303,6 +308,10 @@ fluidPage(
                              sidebarPanel(
                                width = 3,
                                
+                               selectizeInput("r_temp_region", "Select Regions", c("Central", "East", "North", "North-East", "West"),
+                                              multiple = TRUE,
+                                              selected = c("Central", "East", "North", "North-East", "West")),
+                               
                                selectInput("r_temp_measurement", "Measurement", c("Monthly", "Annual"), 
                                            selected = "Monthly"),
                                
@@ -313,9 +322,9 @@ fluidPage(
                                                                         "Minimum Temperature" = "Min_Temp"), 
                                            selected = "Average of Mean Temperature"),
                                
-                               selectInput("s_temp_plot_type", "Plot Type", c("Box Violin" = "boxviolin", 
-                                                                              "Box" = "box", 
-                                                                              "Violin" = "violin"), 
+                               selectInput("r_temp_plot_type", "Plot Type", c("Box Violin", 
+                                                                              "Box", 
+                                                                              "Violin"), 
                                            selected = "Box Violin"),
                                
                                selectInput("r_temp_test_type", "Test Type", c("Non-parametric" = "nonparametric", 
@@ -330,16 +339,19 @@ fluidPage(
                                                                                     "All" = "all"),
                                            selected = "Significant"),
                                
-                               radioButtons("s_temp_conf_inv", "Confidence Interval", c("90" = 0.9,
-                                                                                        "95" = 0.95,
-                                                                                        "99" = 0.99),
+                               radioButtons("r_temp_conf_inv", "Confidence Level", c("90%" = 0.9,
+                                                                                     "95%" = 0.95,
+                                                                                     "99%" = 0.99),
                                             selected = 0.95),
+                               
+                               sliderInput("r_temp_psize", "Font Size for p-value", 3, 10,
+                                           value = 5),
                                
                                actionButton("show_region_temp", "Plot")
                              ),  #sideabrpanel
                              
                              plotOutput("region_temp",
-                                        width = "1125px", height = "800px")
+                                        width = "1125px", height = "900px")
                            ) # sidebarlayout
                  ), # nav_panel
                  
@@ -348,6 +360,10 @@ fluidPage(
                            sidebarLayout(
                              sidebarPanel(
                                width = 3,
+                               
+                               selectizeInput("r_rf_region", "Select Regions", c("Central", "East", "North", "North-East", "West"),
+                                              multiple = TRUE,
+                                              selected = c("Central", "East", "North", "North-East", "West")),
                                
                                selectInput("r_rf_measurement", "Measurement", c("Monthly", "Annual"), 
                                            selected = "Monthly"),
@@ -364,9 +380,9 @@ fluidPage(
                                                                       "Maximum of Total Rainfall" = "Max_Total_Rf"), 
                                            selected = "Total Rainfall"),
                                
-                               selectInput("r_rf_plot_type", "Plot Type", c("Box Violin" = "boxviolin", 
-                                                                            "Box" = "box", 
-                                                                            "Violin" = "violin"), 
+                               selectInput("r_rf_plot_type", "Plot Type", c("Box Violin", 
+                                                                            "Box", 
+                                                                            "Violin"), 
                                            selected = "Box Violin"),
                                
                                selectInput("r_rf_test_type", "Test Type", c("Non-parametric" = "nonparametric", 
@@ -381,17 +397,20 @@ fluidPage(
                                                                                   "All" = "all"),
                                            selected = "Significant"),
                                
-                               radioButtons("r_rf_conf_inv", "Confidence Interval", c("90" = 0.9,
-                                                                                      "95" = 0.95,
-                                                                                      "99" = 0.99),
+                               radioButtons("r_rf_conf_inv", "confidence Level", c("90%" = 0.9,
+                                                                                   "95%" = 0.95,
+                                                                                   "99%" = 0.99),
                                             selected = 0.95),
+                               
+                               sliderInput("r_rf_psize", "Font Size for p-value", 3, 10,
+                                           value = 5),
                                
                                actionButton("show_region_rf", "Plot")
                                
                              ),  #sideabrpanel
                              
                              plotOutput("region_rf",
-                                        width = "1125px", height = "800px")
+                                        width = "1125px", height = "900px")
                            ) # sidebarlayout
                  ) # nav_panel
                ) # navset_card_underline

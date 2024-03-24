@@ -1,5 +1,5 @@
 pacman::p_load(shiny, tidyverse, ggrepel, DT, plotly, forecast, stats, zoo, shinyjs, ggstatsplot, gganimate, ggthemes,
-               sf, tmap, terra, viridis, sp, raster, gstat, automap, ggrepel)
+               sf, tmap, terra, viridis, sp, raster, ggrepel)
 
 # import data
 temp_data <-read_rds("data/rds/temperature.rds")
@@ -398,7 +398,9 @@ function(input, output, session) {
                                 p_type = "boxviolin", 
                                 t_type = "nonparametric", 
                                 pair_disp = "significant", 
-                                conf = 0.95) {
+                                conf = 0.95,
+                                font_size = 5) {
+    
     if (measurement == "Monthly") {
       data <- Temp_Monthly %>%
         filter(Station %in% selected_stations)
@@ -406,10 +408,10 @@ function(input, output, session) {
       filter(Station %in% selected_stations)
     }
     
-    if (p_type == "box") {
+    if (p_type == "Box") {
       v_width <- 0
       b_width <- 0.3
-    } else if (p_type == "violin") {
+    } else if (p_type == "Violin") {
       v_width <- 0.5
       b_width <- 0
     } else {
@@ -419,7 +421,6 @@ function(input, output, session) {
     
     output$station_temp <- renderPlot({
       
-      print(input$s_temp_metric)
       ylab <- switch(input$s_temp_metric,
                      "Avg_Mean_Temp" = "Average of Mean Temperature",
                      "Avg_Max_Temp" = "Average of Max Temperature",
@@ -439,17 +440,22 @@ function(input, output, session) {
         y = !!sym(metric),
         type = t_type,
         pairwise.display = pair_disp,
-        point.args = list(position = ggplot2::position_jitterdodge(dodge.width = 0.6), 
+        point.args = list(position = position_jitterdodge(dodge.width = 0.6), 
                           alpha = 0.4, size = 5, stroke = 0, na.rm = TRUE),
         boxplot.args = list(width = b_width, alpha = 0.2),
         violin.args = list(width = v_width, alpha = 0.2),
+        ggsignif.args = list(textsize = font_size, tip_length = 0.01),
         xlab = "Station",
         ylab = ylab,
         title = title) +
+        theme_classic() +
         theme(axis.text = element_text(size = 14),
-              axis.title.x = element_text(size = 18),
-              axis.title.y = element_text(size = 18),
-              plot.title = element_text(size = 25))
+              axis.title.x = element_text(size = 18,
+                                          vjust = -0.3),
+              axis.title.y = element_text(size = 18,
+                                          vjust = +1),
+              plot.title = element_text(size = 25), 
+              legend.position="none")
     })
   }
   
@@ -460,7 +466,8 @@ function(input, output, session) {
                       input$s_temp_plot_type,
                       input$s_temp_test_type,
                       input$s_temp_pair_display,
-                      input$s_temp_conf_inv)
+                      input$s_temp_conf_inv,
+                      input$s_temp_psize)
   })
   
   # CDA - Rainfall by Station
@@ -471,7 +478,9 @@ function(input, output, session) {
                               p_type = "boxviolin", 
                               t_type = "nonparametric", 
                               pair_disp = "significant", 
-                              conf = 0.95) {
+                              conf = 0.95,
+                              font_size = 5) {
+    
     if (measurement == "Monthly") {
       data <- Rainfall_Monthly %>%
         filter(Station %in% selected_stations)
@@ -479,10 +488,10 @@ function(input, output, session) {
       filter(Station %in% selected_stations)
     }
     
-    if (p_type == "box") {
+    if (p_type == "Box") {
       v_width <- 0
       b_width <- 0.3
-    } else if (p_type == "violin") {
+    } else if (p_type == "Violin") {
       v_width <- 0.5
       b_width <- 0
     } else {
@@ -516,17 +525,22 @@ function(input, output, session) {
         y = !!sym(metric),
         type = t_type,
         pairwise.display = pair_disp,
-        point.args = list(position = ggplot2::position_jitterdodge(dodge.width = 0.6), 
+        point.args = list(position = position_jitterdodge(dodge.width = 0.6), 
                           alpha = 0.4, size = 5, stroke = 0, na.rm = TRUE),
         boxplot.args = list(width = b_width, alpha = 0.2),
         violin.args = list(width = v_width, alpha = 0.2),
+        ggsignif.args = list(textsize = font_size, tip_length = 0.01),
         xlab = "Station",
         ylab = ylab,
         title = title) +
+        theme_classic() +
         theme(axis.text = element_text(size = 14),
-              axis.title.x = element_text(size = 18),
-              axis.title.y = element_text(size = 18),
-              plot.title = element_text(size = 25))
+              axis.title.x = element_text(size = 18,
+                                          vjust = -0.3),
+              axis.title.y = element_text(size = 18,
+                                          vjust = +1),
+              plot.title = element_text(size = 25), 
+              legend.position="none")
     })
   }
   
@@ -537,7 +551,174 @@ function(input, output, session) {
                     input$s_rf_plot_type,
                     input$s_rf_test_type,
                     input$s_rf_pair_display,
-                    input$s_rf_conf_inv)
+                    input$s_rf_conf_inv,
+                    input$r_rf_psize)
+  })
+  
+  # CDA - Temperature by Region
+  
+  plot_region_temp <- function(measurement, 
+                               selected_regions = c("Central", "East", "North", "North-East", "West"), 
+                               metric = "Avg_Mean_Temp", 
+                               p_type = "boxviolin", 
+                               t_type = "nonparametric", 
+                               pair_disp = "significant", 
+                               conf = 0.95,
+                               font_size = 5) {
+    
+    if (measurement == "Monthly") {
+      data <- Temp_Monthly %>%
+        filter(Region %in% selected_regions)
+    } else {data <- Temp_Annual %>%
+      filter(Region %in% selected_regions)
+    }
+    
+    if (p_type == "Box") {
+      v_width <- 0
+      b_width <- 0.3
+    } else if (p_type == "Violin") {
+      v_width <- 0.5
+      b_width <- 0
+    } else {
+      v_width <- 0.5
+      b_width <- 0.3
+    }
+    
+    output$region_temp <- renderPlot({
+      
+      ylab <- switch(input$r_temp_metric,
+                     "Avg_Mean_Temp" = "Average of Mean Temperature",
+                     "Avg_Max_Temp" = "Average of Max Temperature",
+                     "Avg_Min_Temp" = "Average of Minimum Temperature",
+                     "Max_Temp" = "Maximum Temperature",
+                     "Min_Temp" = "Minimum Temperature")
+      
+      if (input$r_temp_measurement == "Monthly") {
+        title <- paste("Monthly", ylab, "by Selected Regions")
+      } else {
+        title <- paste("Annual", ylab, "by Selected Regions")
+      }
+      
+      ggbetweenstats(
+        data = data,
+        x = Region,
+        y = !!sym(metric),
+        type = t_type,
+        pairwise.display = pair_disp,
+        point.args = list(position = position_jitterdodge(dodge.width = 0.6), 
+                          alpha = 0.4, size = 5, stroke = 0, na.rm = TRUE),
+        boxplot.args = list(width = b_width, alpha = 0.2),
+        violin.args = list(width = v_width, alpha = 0.2),
+        ggsignif.args = list(textsize = font_size, tip_length = 0.01),
+        xlab = "Region",
+        ylab = ylab,
+        title = title) +
+        theme_classic() +
+        theme(axis.text = element_text(size = 14),
+              axis.title.x = element_text(size = 18,
+                                          vjust = -0.3),
+              axis.title.y = element_text(size = 18,
+                                          vjust = +1),
+              plot.title = element_text(size = 25), 
+              legend.position="none")
+    })
+  }
+  
+  observeEvent(input$show_region_temp, {
+    plot_region_temp(input$r_temp_measurement, 
+                     input$r_temp_region,
+                     input$r_temp_metric,
+                     input$r_temp_plot_type,
+                     input$r_temp_test_type,
+                     input$r_temp_pair_display,
+                     input$r_temp_conf_inv,
+                     input$r_temp_psize)
+  })
+  
+  # CDA - Rainfall by Region
+  
+  plot_region_rf <- function(measurement, 
+                             selected_regions = c("Central", "East", "North", "North-East", "West"), 
+                             metric = "Total_Rf", 
+                             p_type = "boxviolin", 
+                             t_type = "nonparametric", 
+                             pair_disp = "significant", 
+                             conf = 0.95,
+                             font_size = 5) {
+    
+    if (measurement == "Monthly") {
+      data <- Rainfall_Monthly %>%
+        filter(Region %in% selected_regions)
+    } else {data <- Rainfall_Annual %>%
+      filter(Region %in% selected_regions)
+    }
+    
+    if (p_type == "Box") {
+      v_width <- 0
+      b_width <- 0.3
+    } else if (p_type == "Violin") {
+      v_width <- 0.5
+      b_width <- 0
+    } else {
+      v_width <- 0.5
+      b_width <- 0.3
+    }
+    
+    output$region_rf <- renderPlot({
+      
+      ylab <- switch(input$r_rf_metric,
+                     "Total_Rf" = "Total Rainfall",
+                     "Total_Rf_30" = "Total Rainfall (30 min)",
+                     "Total_Rf_60" = "Total Rainfall (60 min)",
+                     "Total_Rf_120" = "Total Rainfall (120 min)",
+                     "Average of Total Rainfall" = "Avg_Total_Rf",
+                     "Avg_Total_Rf30" = "Average of Total Rainfall (30 min)",
+                     "Avg_Total_Rf60" = "Average of Total Rainfall (60 min)",
+                     "Avg_Total_Rf120" = "Average of Total Rainfall (120 min)",
+                     "Min_Total_Rf" = "Minimum of Total Rainfall",
+                     "Max_Total_Rf" = "Maximum of Total Rainfall")
+      
+      if (input$r_rf_measurement == "Monthly") {
+        title <- paste("Monthly", ylab, "by Selected Regions")
+      } else {
+        title <- paste("Annual", ylab, "by Selected Regions")
+      }
+      
+      ggbetweenstats(
+        data = data,
+        x = Region,
+        y = !!sym(metric),
+        plot.type = p_type,
+        type = t_type,
+        pairwise.display = pair_disp,
+        point.args = list(position = position_jitterdodge(dodge.width = 0.6), 
+                          alpha = 0.4, size = 5, stroke = 0, na.rm = TRUE),
+        boxplot.args = list(width = b_width, alpha = 0.2),
+        violin.args = list(width = v_width, alpha = 0.2),
+        ggsignif.args = list(textsize = font_size, tip_length = 0.01),
+        xlab = "Region",
+        ylab = ylab,
+        title = title) +
+        theme_classic() +
+        theme(axis.text = element_text(size = 14),
+              axis.title.x = element_text(size = 18,
+                                          vjust = -0.3),
+              axis.title.y = element_text(size = 18,
+                                          vjust = +1),
+              plot.title = element_text(size = 25), 
+              legend.position="none")
+    })
+  }
+  
+  observeEvent(input$show_region_rf, {
+    plot_region_rf(input$r_rf_measurement, 
+                   input$r_rf_region,
+                   input$r_rf_metric,
+                   input$r_rf_plot_type,
+                   input$r_rf_test_type,
+                   input$r_rf_pair_display,
+                   input$r_rf_conf_inv,
+                   input$r_rf_psize)
   })
   
   # Forecast
