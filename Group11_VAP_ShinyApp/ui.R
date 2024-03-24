@@ -45,8 +45,8 @@ fluidPage(
     widths = c(2,10),
     
     "Overview",
-    tabPanel("Introduction", "Panel one contents"),
-    tabPanel("Dashboard", 
+    tabPanel("Dashboard", "Panel one contents"),
+    tabPanel("Live Weather Forecast", 
              titlePanel("Live Weather Forecast"),
              mainPanel(
                
