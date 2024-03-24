@@ -45,7 +45,18 @@ fluidPage(
     widths = c(2,10),
     
     "Overview",
-    tabPanel("Dashboard", "Panel one contents"),
+    tabPanel("Dashboard", 
+             # Application title
+             titlePanel("Temperature and Rainfall: 1980-2023"),
+             
+             # Display the animation
+             tags$div(style = "text-align: center;", 
+                      uiOutput("anim_plot")),
+             
+             imageOutput("animation")
+             
+    ),
+    
     tabPanel("Live Weather Forecast", 
              titlePanel("Live Weather Forecast"),
              mainPanel(

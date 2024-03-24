@@ -1,4 +1,5 @@
-pacman::p_load(shiny, tidyverse, ggrepel, DT, plotly, forecast, stats, zoo, shinyjs, ggstatsplot, sf, tmap, terra, viridis, sp, raster, gstat, automap)
+pacman::p_load(shiny, tidyverse, ggrepel, DT, plotly, forecast, stats, zoo, shinyjs, ggstatsplot, gganimate, ggthemes,
+               sf, tmap, terra, viridis, sp, raster, gstat, automap)
 
 # import data
 temp_data <-read_rds("data/rds/temperature.rds")
@@ -142,7 +143,39 @@ weather_Y <- weather_YM %>%
 # Define server logic
 function(input, output, session) {
   
-  # Live 
+  # Dashboard Animation
+  
+  output$anim_plot <- renderUI({
+    # Render the animation and save it as a gif
+    anim_file <- tempfile(fileext = ".gif")
+    p <- ggplot(temp_time, aes(x = Month, y = MeanTemp)) +
+      geom_point(aes(color = MeanTemp), alpha = 0.5, size = 4, show.legend = FALSE) +
+      scale_color_gradient(low = "darkorange", high = "darkred") +
+      geom_boxplot(aes(y = MeanTemp_Year), width = 0.8, color = "darkgoldenrod1") +
+      scale_size(range = c(2, 12)) +
+      labs(title = 'Mean Temperature, 1986-2023 \nYear: {frame_time}', 
+           x = 'Month', 
+           y = 'Mean Temperature (°C)') +
+      transition_time(as.integer(Year)) + 
+      ease_aes('linear') +
+      theme(legend.position = "right",
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank()) +
+      guides(color = guide_legend(title = "Average Temperature", override.aes = list(color = "grey", linetype = "dashed"))) +
+      theme_hc()
+    
+    anim_save("animation.gif", animation = p)
+    
+    # Serve the gif file
+    tags$img(src = anim_file, style = "width: 600px; height: 400px;") 
+  })
+  
+  output$animation <- renderImage({
+    # Return a list containing the image file path and content type
+    list(src = "animation.gif", contentType = "image/gif")
+  }, deleteFile = FALSE) # Set to TRUE if the file is temporary
+  
+  # Live Forecast
   
   # Function to retrieve weather data
   getWeatherData <- reactive({
@@ -186,7 +219,7 @@ function(input, output, session) {
       Area = weather_data$area,
       Forecast = weather_data$forecast
     )
-    datatable(weather_table, options = list(pageLength = 5))
+    datatable(weather_table, options = list(pageLength = 10))
   })
   
   
