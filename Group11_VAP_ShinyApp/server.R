@@ -144,39 +144,49 @@ function(input, output, session) {
   
   # Live 
   
-  # Reactive expression to retrieve and store the weather data
-  weather_data <- reactive({
+  # Function to retrieve weather data
+  getWeatherData <- reactive({
     current_time <- Sys.time()
     formatted_date <- format(current_time, "%Y-%m-%d")
     formatted_time <- format(current_time, "%H:%M:%S")
     formatted_datetime <- paste(formatted_date, formatted_time, sep = "T")
     
-    # Retrieve the weather data
-    weather_forecast(formatted_datetime)
+    # Wrap API call in tryCatch to handle errors
+    tryCatch({
+      weather_data <- weather_forecast(formatted_datetime)
+      return(weather_data)
+    }, error = function(e) {
+      # Return NULL or a default value if API call fails
+      return(NULL)
+    })
   })
   
-  # Output for closest timestamp
   output$closestTimestamp <- renderText({
-    # Use the reactive weather_data
-    paste("Closest timestamp:", weather_data()$closestTimestamp)
+    weather_data <- getWeatherData()
+    if (is.null(weather_data)) {
+      return("No data available")
+    }
+    paste("Closest timestamp:", weather_data$closest_timestamp)
   })
   
-  # Output for forecast validity
   output$forecastValid <- renderText({
-    # Use the reactive weather_data
-    paste("Forecast valid to:", weather_data()$forecast_valid)
+    weather_data <- getWeatherData()
+    if (is.null(weather_data)) {
+      return("No data available")
+    }
+    paste("Forecast valid to:", weather_data$forecast_valid)
   })
   
-  # Output for weather table
   output$weatherTable <- renderDataTable({
-    # Use the reactive weather_data
+    weather_data <- getWeatherData()
+    if (is.null(weather_data)) {
+      return(data.frame(Area = NA, Forecast = NA))
+    }
     weather_table <- data.frame(
-      Area = weather_data()$area,
-      Forecast = weather_data()$forecast
+      Area = weather_data$area,
+      Forecast = weather_data$forecast
     )
-    
-    # Return the DataTable
-    datatable(weather_table, options = list(pageLength = 8))
+    datatable(weather_table, options = list(pageLength = 5))
   })
   
   
