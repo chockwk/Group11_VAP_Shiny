@@ -725,7 +725,7 @@ function(input, output, session) {
   
   forecastPlotReady <- reactiveValues(ok = FALSE)
 
-  observeEvent(input$showPlotButton, {
+  observeEvent(input$Forecast_Button, {
     shinyjs::disable("Forecast_Button")
     Sys.sleep(2)  # Simulate some processing time
     forecastPlotReady$ok <- TRUE
