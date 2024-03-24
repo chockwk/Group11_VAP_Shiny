@@ -1,4 +1,4 @@
-pacman::p_load(shiny, tidyverse, ggrepel, plotly, forecast, stats, zoo, shinyjs, ggstatsplot, sf, tmap, terra, viridis, sp, raster, gstat, automap)
+pacman::p_load(shiny, tidyverse, ggrepel, DT, plotly, forecast, stats, zoo, shinyjs, ggstatsplot, sf, tmap, terra, viridis, sp, raster, gstat, automap)
 
 # import data
 temp_data <-read_rds("data/rds/temperature.rds")
@@ -141,6 +141,44 @@ weather_Y <- weather_YM %>%
 
 # Define server logic
 function(input, output, session) {
+  
+  # Live 
+  
+  # Reactive expression to retrieve and store the weather data
+  weather_data <- reactive({
+    current_time <- Sys.time()
+    formatted_date <- format(current_time, "%Y-%m-%d")
+    formatted_time <- format(current_time, "%H:%M:%S")
+    formatted_datetime <- paste(formatted_date, formatted_time, sep = "T")
+    
+    # Retrieve the weather data
+    weather_forecast(formatted_datetime)
+  })
+  
+  # Output for closest timestamp
+  output$closestTimestamp <- renderText({
+    # Use the reactive weather_data
+    paste("Closest timestamp:", weather_data()$closestTimestamp)
+  })
+  
+  # Output for forecast validity
+  output$forecastValid <- renderText({
+    # Use the reactive weather_data
+    paste("Forecast valid to:", weather_data()$forecast_valid)
+  })
+  
+  # Output for weather table
+  output$weatherTable <- renderDataTable({
+    # Use the reactive weather_data
+    weather_table <- data.frame(
+      Area = weather_data()$area,
+      Forecast = weather_data()$forecast
+    )
+    
+    # Return the DataTable
+    datatable(weather_table, options = list(pageLength = 8))
+  })
+  
   
   # Timeseries
   

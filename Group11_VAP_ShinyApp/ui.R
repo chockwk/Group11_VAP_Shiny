@@ -1,5 +1,5 @@
 # Load required packages
-pacman::p_load(bslib, shiny, shinydashboard, shinyWidgets, plotly, ggstatsplot)
+pacman::p_load(bslib, shiny, shinydashboard, shinyWidgets, plotly, ggstatsplot, DT)
 
 sidebar <- dashboardSidebar(
   width = 100,
@@ -46,7 +46,18 @@ fluidPage(
     
     "Overview",
     tabPanel("Introduction", "Panel one contents"),
-    tabPanel("Dashboard", "Panel two contents"),
+    tabPanel("Dashboard", 
+             titlePanel("Live Weather Forecast"),
+             mainPanel(
+               
+               # Inform Time and Forecast Validity
+               textOutput('closestTimestamp'),
+               textOutput('forecastValid'),
+               
+               # Weather Forecast
+               DT::dataTableOutput("weatherTable")
+             )
+    ),
     
     "Exploratory Data Analysis",
     tabPanel("Time Series Analysis", 
