@@ -50,9 +50,20 @@ fluidPage(
     
     "Exploratory Data Analysis",
     tabPanel("Time Series Analysis", 
-             "Panel 6 contents"
-             
-             
+             sidebarLayout(
+               sidebarPanel(
+                 selectInput("selected_years", "Select Years:", 
+                             choices = 1990:2023, 
+                             multiple = TRUE),
+                 actionButton("showPlotButton", "Plot")
+               ),
+               mainPanel(
+                 navset_card_underline(
+                   nav_panel("Temperature", plotOutput("temp_cycle_plot")),
+                   nav_panel("Rainfall", plotOutput("rain_cycle_plot"))
+                 )
+               )
+             )
     ),
     
     tabPanel("Geospatial Analysis",

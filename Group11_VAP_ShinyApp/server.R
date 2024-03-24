@@ -103,6 +103,22 @@ Rainfall_Monthly <- rain_data %>%
   ungroup() %>% 
   filter(!is.na(Total_Rf))
 
+# Timeseries
+
+# Prepare temperature data
+MeanTemp_Year <- temp_data %>% 
+  group_by(Year) %>% 
+  summarise(MeanTemp_Year = round(mean(MeanTemp, na.rm = TRUE), 1))
+
+temp_time <- left_join(temp_data, MeanTemp_Year, by = "Year")
+
+# Prepare rainfall data
+TotalRainfall_Year <- rain_data %>% 
+  group_by(Year) %>% 
+  summarise(MeanRainfall_Year = round(mean(TotalRainfall, na.rm = TRUE), 1))
+
+rainfall_time <- left_join(rain_data, TotalRainfall_Year, by = "Year")
+
 # Correlation
 
 weather_YM <- merge(rain_data, temp_data, by=c("Station", "Region", "Year", "Month", "Date"))
@@ -125,6 +141,32 @@ weather_Y <- weather_YM %>%
 
 # Define server logic
 function(input, output, session) {
+  
+  # Timeseries
+  
+  observeEvent(input$showPlotButton, {
+    output$temp_cycle_plot <- renderPlot({
+      selection <- input$selected_years
+      cycle_input <- temp_time %>% 
+        filter(Year %in% selection)
+      
+      # Simple plot for debugging
+      ggplot(cycle_input, aes(x = Month, y = MeanTemp)) +
+        geom_line() +
+        labs(title = "Debugging Temperature Plot")
+    })
+    
+    output$rain_cycle_plot <- renderPlot({
+      selection <- input$selected_years
+      cycle_input <- rainfall_time %>%
+        filter(Year %in% selection)
+      
+      # Simple plot for debugging
+      ggplot(cycle_input, aes(x = Month, y = TotalRainfall)) +
+        geom_line() +
+        labs(title = "Debugging Rainfall Plot")
+    })
+  })
   
   # Geospatial
   
