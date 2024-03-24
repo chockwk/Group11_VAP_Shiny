@@ -145,27 +145,78 @@ function(input, output, session) {
   # Timeseries
   
   observeEvent(input$showPlotButton, {
+    
+    # Temperature plot
     output$temp_cycle_plot <- renderPlot({
-      selection <- input$selected_years
-      cycle_input <- temp_time %>% 
-        filter(Year %in% selection)
       
-      # Simple plot for debugging
-      ggplot(cycle_input, aes(x = Month, y = MeanTemp)) +
-        geom_line() +
-        labs(title = "Debugging Temperature Plot")
+      # User input
+      req(input$selected_years)
+      
+      # Filtering the dataframe for the selected years
+      cycle_input <- temp_time %>%
+        filter(Year %in% input$selected_years)
+    
+      # Define darker pastel colors
+      palette <- c("gold1", "orange2", "darkorange", "darkorange1", "tomato1", "tomato3", "tomato4")
+      
+      # Plot with darker pastel colors
+      ggplot(data = cycle_input, aes(x = Month, y = MeanTemp, group = Year, color = as.factor(Year))) +
+        geom_hline(aes(yintercept = MeanTemp_Year), color = "black", alpha = 1.0, size = 0.4) +
+        geom_line(alpha = 0.6) +
+        geom_text(aes(x = 1, y = MeanTemp_Year - 0.05, label = paste0("Mean: ", MeanTemp_Year)),
+                  hjust = -0.1, vjust = 0.5, color = "black", size = 3.5) +
+        facet_wrap(~Year, scales = "free_y") + 
+        labs(x = "Month", y = "Mean Temperature", title = "Temperature Change over Selected Years") +
+        theme_bw() +
+        theme(legend.position = "none",
+              axis.text.x = element_blank(),
+              axis.ticks.x = element_blank(),
+              axis.title = element_text(size = 10),
+              title = element_text(size =12),
+              axis.text.y = element_text(size = 8),
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              strip.background = element_blank(),
+              strip.text = element_text(size = 12)) +
+        scale_color_manual(values = palette)
     })
     
+    # Rainfall plot
     output$rain_cycle_plot <- renderPlot({
-      selection <- input$selected_years
-      cycle_input <- rainfall_time %>%
-        filter(Year %in% selection)
       
-      # Simple plot for debugging
-      ggplot(cycle_input, aes(x = Month, y = TotalRainfall)) +
-        geom_line() +
-        labs(title = "Debugging Rainfall Plot")
+      # User input
+      req(input$selected_years)
+      
+      # Filtering the dataframe for the selected years
+      cycle_input <- rainfall_time %>%
+        filter(Year %in% input$selected_years)
+      
+      # Generate a color palette with a sufficient number of colors
+      number_of_years <- length(unique(cycle_input$Year))
+      palette <- colorRampPalette(c("steelblue1", "dodgerblue", "dodgerblue3", "royalblue3", "blue3", "blue4", "darkblue"))(number_of_years)
+      
+      # Plot with darker pastel colors
+      ggplot(data = cycle_input, aes(x = Month, y = TotalRainfall, group = Year, color = as.factor(Year))) +
+        geom_hline(aes(yintercept = MeanRainfall_Year), color = "black", alpha = 1.0, size = 0.4) +
+        geom_line(alpha = 0.6) +
+        geom_text(aes(x = 1, y = MeanRainfall_Year - 0.05, label = paste0("Mean: ", MeanRainfall_Year)),
+                  hjust = -0.1, vjust = 0.5, color = "black", size = 3.5) +
+        facet_wrap(~Year, scales = "free_y") +
+        labs(x = "Month", y = "Total Rainfall", title = "Rainfall Change over Selected Years") +
+        theme_bw() +
+        theme(legend.position = "none",
+              axis.text.x = element_blank(),
+              axis.ticks.x = element_blank(),
+              axis.title = element_text(size = 10),
+              title = element_text(size =12),
+              axis.text.y = element_text(size = 8),
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              strip.background = element_blank(),
+              strip.text = element_text(size = 12)) +
+        scale_color_manual(values = palette)
     })
+    
   })
   
   # Geospatial
