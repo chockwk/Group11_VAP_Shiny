@@ -145,35 +145,33 @@ function(input, output, session) {
   
   # Dashboard Animation
   
-  output$anim_plot <- renderUI({
-    # Render the animation and save it as a gif
-    anim_file <- tempfile(fileext = ".gif")
-    p <- ggplot(temp_time, aes(x = Month, y = MeanTemp)) +
-      geom_point(aes(color = MeanTemp), alpha = 0.5, size = 4, show.legend = FALSE) +
-      scale_color_gradient(low = "darkorange", high = "darkred") +
-      geom_boxplot(aes(y = MeanTemp_Year), width = 0.8, color = "darkgoldenrod1") +
-      scale_size(range = c(2, 12)) +
-      labs(title = 'Mean Temperature, 1986-2023 \nYear: {frame_time}', 
-           x = 'Month', 
-           y = 'Mean Temperature (°C)') +
-      transition_time(as.integer(Year)) + 
-      ease_aes('linear') +
-      theme(legend.position = "right",
-            panel.grid.major = element_blank(),
-            panel.grid.minor = element_blank()) +
-      guides(color = guide_legend(title = "Average Temperature", override.aes = list(color = "grey", linetype = "dashed"))) +
-      theme_hc()
-    
-    anim_save("animation.gif", animation = p)
-    
-    # Serve the gif file
-    tags$img(src = anim_file, style = "width: 600px; height: 400px;") 
+  # Render temp_plot
+  output$temp_plot <- renderUI({
+    tags$div(style = "text-align: center;", 
+             imageOutput("temp_animation")
+    )
   })
   
-  output$animation <- renderImage({
-    # Return a list containing the image file path and content type
-    list(src = "animation.gif", contentType = "image/gif")
-  }, deleteFile = FALSE) # Set to TRUE if the file is temporary
+  # Render rainfall_plot
+  output$rainfall_plot <- renderUI({
+    tags$div(style = "text-align: center;", 
+             imageOutput("rainfall_animation")
+    )
+  })
+  
+  # Load and display temp_plot GIF
+  output$temp_animation <- renderImage({
+    list(src = "data/images/tempplot.gif",
+         contentType = "image/gif",
+         alt = "Temperature Plot")
+  }, deleteFile = FALSE)
+  
+  # Load and display rainfall_plot GIF
+  output$rainfall_animation <- renderImage({
+    list(src = "data/images/rainplot.gif",
+         contentType = "image/gif",
+         alt = "Rainfall Plot")
+  }, deleteFile = FALSE)
   
   # Live Forecast
   

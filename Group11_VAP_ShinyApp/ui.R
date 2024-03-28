@@ -49,12 +49,11 @@ fluidPage(
              # Application title
              titlePanel("Temperature and Rainfall: 1980-2023"),
              
-             # Display the animation
-             tags$div(style = "text-align: center;", 
-                      uiOutput("anim_plot")),
+             # Display the temp_plot
+             uiOutput("temp_plot"),
              
-             imageOutput("animation")
-             
+             # Display the rainfall_plot
+             uiOutput("rainfall_plot")
     ),
     
     tabPanel("Live Weather Forecast", 
