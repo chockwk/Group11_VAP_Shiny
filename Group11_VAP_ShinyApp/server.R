@@ -218,16 +218,25 @@ function(input, output, session) {
     datatable(weather_table, options = list(pageLength = 10))
   })
   
+  
   # Timeseries
   
   observeEvent(input$showPlotButton, {
     
     # Temperature plot
     output$temp_cycle_plot <- renderPlot({
+      
+      # User input
       req(input$selected_years)
+      
+      # Filtering the dataframe for the selected years
       cycle_input <- temp_time %>%
         filter(Year %in% input$selected_years)
+    
+      # Define darker pastel colors
       palette <- c("gold1", "orange2", "darkorange", "darkorange1", "tomato1", "tomato3", "tomato4")
+      
+      # Plot with darker pastel colors
       ggplot(data = cycle_input, aes(x = Month, y = MeanTemp, group = Year, color = as.factor(Year))) +
         geom_hline(aes(yintercept = MeanTemp_Year), color = "black", alpha = 1.0, size = 0.4) +
         geom_line(alpha = 0.6) +
@@ -251,11 +260,19 @@ function(input, output, session) {
     
     # Rainfall plot
     output$rain_cycle_plot <- renderPlot({
+      
+      # User input
       req(input$selected_years)
+      
+      # Filtering the dataframe for the selected years
       cycle_input <- rainfall_time %>%
         filter(Year %in% input$selected_years)
+      
+      # Generate a color palette with a sufficient number of colors
       number_of_years <- length(unique(cycle_input$Year))
       palette <- colorRampPalette(c("steelblue1", "dodgerblue", "dodgerblue3", "royalblue3", "blue3", "blue4", "darkblue"))(number_of_years)
+      
+      # Plot with darker pastel colors
       ggplot(data = cycle_input, aes(x = Month, y = TotalRainfall, group = Year, color = as.factor(Year))) +
         geom_hline(aes(yintercept = MeanRainfall_Year), color = "black", alpha = 1.0, size = 0.4) +
         geom_line(alpha = 0.6) +
@@ -276,13 +293,17 @@ function(input, output, session) {
               strip.text = element_text(size = 12)) +
         scale_color_manual(values = palette)
     })
+    
   })
   
   # Geospatial
   
+  # Data loading should be handled outside of reactive context if they are static
   stations <- read.csv("data/aspatial/RainfallStation.csv")
   mpsz <- st_read(dsn = "data/geospatial", layer = "MPSZ-2019") %>% 
     st_transform(crs=3414)
+  
+  # Assuming temp_data and rain_data are already loaded into the R session
   
   output$temp_geoplot <- renderPlot({
     temp_data %>% 
@@ -296,6 +317,7 @@ function(input, output, session) {
                  nmax = input$n_neighbors,
                  model = model)
     
+    # Predict the spatial distribution
     grid <- terra::rast(mpsz, nrows = 690, ncols = 1075)
     xy <- terra::xyFromCell(grid, 1:ncell(grid))
     coop <- st_as_sf(as.data.frame(xy), coords = c("x", "y"), crs = st_crs(mpsz))
@@ -308,6 +330,7 @@ function(input, output, session) {
     
     pred <- terra::rasterize(resp, grid, field = "pred", fun = "mean")
     
+    # Plot using tmap
     tmap_mode("plot")
     tm <- tm_shape(pred) +
       tm_raster(alpha = 0.6, palette = "viridis") +
@@ -315,6 +338,8 @@ function(input, output, session) {
       tm_compass(type = "8star", size = 2) +
       tm_scale_bar() +
       tm_grid(alpha = 0.2)
+    
+    # Print the plot to the Shiny app
     print(tm)
   })
   
@@ -325,11 +350,13 @@ function(input, output, session) {
       st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326) %>% 
       st_transform(crs = 3414)
   
+  # Conduct geospatial analysis using gstat
   model <- gstat::vgm(psill = 0.5, model = input$model_option, range = input$range_param, nugget = 0.1)
   res <- gstat(formula = TotalRainfall ~ 1,
                nmax = input$n_neighbors,
                model = model)
   
+  # Predict the spatial distribution
   grid <- terra::rast(mpsz, nrows = 690, ncols = 1075)
   xy <- terra::xyFromCell(grid, 1:ncell(grid))
   coop <- st_as_sf(as.data.frame(xy), coords = c("x", "y"), crs = st_crs(mpsz))
@@ -342,13 +369,16 @@ function(input, output, session) {
   
   pred <- terra::rasterize(resp, grid, field = "pred", fun = "mean")
   
+  # Plot using tmap
   tmap_mode("plot")
   tm <- tm_shape(pred) +
     tm_raster(alpha = 0.6, palette = "viridis") +
-    tm_layout(main.title = "Geospatial Analysis for Rainfall") +
+    tm_layout(main.title = paste("Geospatial Analysis Result:", input$analysis_variable)) +
     tm_compass(type = "8star", size = 2) +
     tm_scale_bar() +
     tm_grid(alpha = 0.2)
+  
+  # Print the plot to the Shiny app
   print(tm)
   })
   

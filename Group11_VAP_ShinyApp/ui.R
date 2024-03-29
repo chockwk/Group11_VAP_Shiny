@@ -1,12 +1,44 @@
 # Load required packages
 pacman::p_load(bslib, shiny, shinydashboard, shinyWidgets, plotly)
 
+sidebar <- dashboardSidebar(
+  width = 100,
+  sidebarMenu(
+      menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
+      menuItem("Widgets", icon = icon("th"), tabName = "widgets", badgeLabel = "new", badgeColor = "green")
+      ),
+  dashboardBody()
+)
+
+body <- dashboardBody(
+  tabItems(
+    tabItem(tabName = "dashboard",
+            h2("Dashboard tab content")
+    ),
+    
+    tabItem(tabName = "widgets",
+            h2("Widgets tab content")
+    )
+  )
+)
+
+dashboardPage(
+  dashboardHeader(title = "Simple tabs"),
+  sidebar,
+  body
+)
+
 # Define UI for application
 fluidPage(
+  # Application title
   titlePanel("The Heat is On!"),
+  # Theme
   theme = bslib::bs_theme(bootswatch = "morph"),
-  setBackgroundImage(src = "https://wallpapers.com/images/hd/cute-aesthetic-cloudy-sky-vyyff3zydu6k5b9l.jpg"),
-
+  # Wallpaper
+  setBackgroundImage(
+#    src = "https://storage.googleapis.com/pod_public/1300/95971.jpg"
+    src = "https://wallpapers.com/images/hd/cute-aesthetic-cloudy-sky-vyyff3zydu6k5b9l.jpg"
+  ),
   
   navlistPanel(
     id = "tabset",
@@ -45,9 +77,11 @@ fluidPage(
     tabPanel("Live Weather Forecast", 
              titlePanel("Live Weather Forecast"),
              mainPanel(
+               
                # Inform Time and Forecast Validity
                textOutput('closestTimestamp'),
                textOutput('forecastValid'),
+               
                # Weather Forecast
                DT::dataTableOutput("weatherTable")
              )
@@ -57,7 +91,6 @@ fluidPage(
     tabPanel("Time Series Analysis", 
              sidebarLayout(
                sidebarPanel(
-                 width = 3,
                  selectInput("selected_years", "Select Years:", 
                              choices = 1990:2023, 
                              multiple = TRUE),
