@@ -1,5 +1,5 @@
 # Load required packages
-pacman::p_load(bslib, shiny, shinydashboard, shinyWidgets)
+pacman::p_load(bslib, shiny, shinydashboard, shinyWidgets, plotly)
 
 sidebar <- dashboardSidebar(
   width = 100,
@@ -109,9 +109,6 @@ fluidPage(
              sidebarLayout(
                sidebarPanel(
                  width = 3,
-                 selectInput("analysis_variable", "Variable:",
-                             choices = c("Temperature", "Rainfall")
-                 ),
                  sliderInput("n_neighbors", "Number of Neighbors:",
                              min = 0, max = 20, value = 5
                  ),
@@ -130,8 +127,8 @@ fluidPage(
              mainPanel(
                width = 9,
                navset_card_underline(
-                 nav_panel("Temperature", plotOutput("geo_plot")),
-                 nav_panel("Rainfall")
+                 nav_panel("Temperature", plotOutput("temp_geoplot")),
+                 nav_panel("Rainfall", plotOutput("rain_geoplot"))
                )
              )
            )

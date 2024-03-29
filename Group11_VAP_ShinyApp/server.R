@@ -1,5 +1,4 @@
-pacman::p_load(shiny, tidyverse, ggrepel, DT, plotly, forecast, stats, zoo, shinyjs, ggstatsplot, gganimate, ggthemes,
-               sf, tmap, terra, viridis, sp, raster)
+pacman::p_load(shiny, tidyverse, ggrepel, DT, plotly, forecast, stats, zoo, shinyjs, ggstatsplot, gganimate, ggthemes, sf, tmap, terra, viridis, sp, raster, gstat)
 
 # import data
 temp_data <-read_rds("data/rds/temperature.rds")
@@ -137,7 +136,6 @@ weather_Y <- weather_YM %>%
     TotalRainfall1120 = round(mean(TotalRainfall120, na.rm = TRUE), 1)
   ) %>%
   ungroup()
-
 
 
 # Define server logic
@@ -307,29 +305,15 @@ function(input, output, session) {
   
   # Assuming temp_data and rain_data are already loaded into the R session
   
-  output$geo_plot <- renderPlot({
-    # Check which variable to analyze and select the corresponding data frame
-    data_sf <- if (input$analysis_variable == "Temperature") {
-      temp_data %>% 
+  output$temp_geoplot <- renderPlot({
+    temp_data %>% 
         dplyr::select(Station, MeanTemp) %>% 
         left_join(stations, by = "Station") %>% 
         st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326) %>% 
         st_transform(crs = 3414)
-    } else {
-      rain_data %>% 
-        dplyr::select(Station, TotalRainfall) %>% 
-        left_join(stations, by = "Station") %>% 
-        st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326) %>% 
-        st_transform(crs = 3414)
-    }
     
-    # Prepare for geospatial analysis
-    analysis_var <- if(input$analysis_variable == "Temperature") "MeanTemp" else "TotalRainfall"
-    
-    # Conduct geospatial analysis using gstat
-    model <- vgm(psill = 0.5, model = input$model_option, range = input$range_param, nugget = 0.1)
-    res <- gstat(formula = as.formula(paste(analysis_var, "~ 1")), 
-                 data = data_sf,
+    model <- gstat::vgm(psill = 0.5, model = input$model_option, range = input$range_param, nugget = 0.1)
+    res <- gstat(formula = MeanTemp ~ 1,
                  nmax = input$n_neighbors,
                  model = model)
     
@@ -350,7 +334,7 @@ function(input, output, session) {
     tmap_mode("plot")
     tm <- tm_shape(pred) +
       tm_raster(alpha = 0.6, palette = "viridis") +
-      tm_layout(main.title = paste("Geospatial Analysis Result:", input$analysis_variable)) +
+      tm_layout(main.title = "Geospatial Analysis for Temperature") +
       tm_compass(type = "8star", size = 2) +
       tm_scale_bar() +
       tm_grid(alpha = 0.2)
@@ -359,6 +343,44 @@ function(input, output, session) {
     print(tm)
   })
   
+  output$rain_geoplot <- renderPlot({
+    rain_data %>% 
+      dplyr::select(Station, TotalRainfall) %>% 
+      left_join(stations, by = "Station") %>% 
+      st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326) %>% 
+      st_transform(crs = 3414)
+  
+  # Conduct geospatial analysis using gstat
+  model <- gstat::vgm(psill = 0.5, model = input$model_option, range = input$range_param, nugget = 0.1)
+  res <- gstat(formula = TotalRainfall ~ 1,
+               nmax = input$n_neighbors,
+               model = model)
+  
+  # Predict the spatial distribution
+  grid <- terra::rast(mpsz, nrows = 690, ncols = 1075)
+  xy <- terra::xyFromCell(grid, 1:ncell(grid))
+  coop <- st_as_sf(as.data.frame(xy), coords = c("x", "y"), crs = st_crs(mpsz))
+  coop <- st_filter(coop, mpsz)
+  resp <- predict(res, coop)
+  
+  resp$x <- st_coordinates(resp1)[,1]
+  resp$y <- st_coordinates(resp1)[,2]
+  resp$pred <- resp1$var1.pred
+  
+  pred <- terra::rasterize(resp, grid, field = "pred", fun = "mean")
+  
+  # Plot using tmap
+  tmap_mode("plot")
+  tm <- tm_shape(pred) +
+    tm_raster(alpha = 0.6, palette = "viridis") +
+    tm_layout(main.title = paste("Geospatial Analysis Result:", input$analysis_variable)) +
+    tm_compass(type = "8star", size = 2) +
+    tm_scale_bar() +
+    tm_grid(alpha = 0.2)
+  
+  # Print the plot to the Shiny app
+  print(tm)
+  })
   
   # Correlation
   
