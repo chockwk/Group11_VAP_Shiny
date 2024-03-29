@@ -147,14 +147,14 @@ function(input, output, session) {
   
   # Render temp_plot
   output$temp_plot <- renderUI({
-    tags$div(style = "text-align: center;", 
+    tags$div(style = "text-align: left;", 
              imageOutput("temp_animation")
     )
   })
   
   # Render rainfall_plot
   output$rainfall_plot <- renderUI({
-    tags$div(style = "text-align: center;", 
+    tags$div(style = "text-align: left;", 
              imageOutput("rainfall_animation")
     )
   })

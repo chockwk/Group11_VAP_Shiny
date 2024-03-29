@@ -47,13 +47,33 @@ fluidPage(
     "Overview",
     tabPanel("Dashboard", 
              # Application title
-             titlePanel("Temperature and Rainfall: 1980-2023"),
+
+             tags$h1("Welcome to Singapore’s Race Against Climate Change"),
+             tags$h2("Understanding Our Climate, Shaping Our Future"),
+             tags$p(HTML("As the sun rises over the Lion City, we embark on an urgent journey to address a challenge that looms over our nation: climate change. Singapore, our home, our pride, stands at the forefront of a silent battle against the escalating impacts of a warming planet. This platform is born out of a necessity to harness the power of data, to visualize and understand the creeping changes to our environment, and to spearhead proactive strategies for resilience and sustainability.")),
+             tags$h3("Why This Matters"),
+             tags$p(HTML("Singapore, a vibrant city-state renowned for its lush greenery amidst metropolitan splendor, faces existential threats from the consequences of global warming. Intensified rainfall, and increasing temperatures are not just predictions; they are the imminent realities we seek to comprehend and mitigate through informed action.")),
+             tags$h3("Project Objectives"),
+             tags$p(HTML("Our mission is multi-faceted, aiming not only to highlight the past and present but also to cast a light on our future:")),
+             tags$ul(
+               tags$li("Visualize: Translate complex climate data into clear, compelling visualizations, making the science accessible and engaging to all Singaporeans."),
+               tags$li("Predict: Harness historical data to model future climate scenarios, equipping everyone with the tools to plan and act with foresight."),
+               tags$li("Empower: Create a dynamic public platform for every citizen to interact with, explore, and contribute to our collective understanding of climate trends.")
+             ),
+             tags$h3("The Reality in Numbers"),
+             tags$p(HTML("In the last decade, our mean temperatures have edged upward, with an average increase of 0.25°C, subtly yet significantly altering our city's climate balance. Urban heat has surged, with certain regions experiencing temperatures up to 7°C higher than surrounding areas, a direct challenge to our liveability.")),
              
              # Display the temp_plot
              uiOutput("temp_plot"),
              
+             tags$p(HTML("Sea levels around Singapore have risen at a rate of 1.2 to 1.7 mm per year since the 1970s, outpacing the global average and putting our coastal integrity at stake. The repercussions are dire for Singapore as a low-lying state; its vulnerability to the effects of climate change cannot be undermined.")),
+             
              # Display the rainfall_plot
-             uiOutput("rainfall_plot")
+             uiOutput("rainfall_plot"),
+             
+             tags$p(HTML("This is a call to engage, to learn, and to contribute. As stewards of our nation's future, we invite you to delve into the data, understand the trends, and join the dialogue. Together, let's navigate the path towards a resilient and sustainable Singapore.")),
+
+             
     ),
     
     tabPanel("Live Weather Forecast", 
