@@ -1,5 +1,5 @@
 # Load required packages
-pacman::p_load(bslib, shiny, shinydashboard, shinyWidgets, plotly, ggstatsplot, DT)
+pacman::p_load(bslib, shiny, shinydashboard, shinyWidgets)
 
 sidebar <- dashboardSidebar(
   width = 100,
@@ -71,9 +71,7 @@ fluidPage(
              # Display the rainfall_plot
              uiOutput("rainfall_plot"),
              
-             tags$p(HTML("This is a call to engage, to learn, and to contribute. As stewards of our nation's future, we invite you to delve into the data, understand the trends, and join the dialogue. Together, let's navigate the path towards a resilient and sustainable Singapore.")),
-
-             
+             tags$p(HTML("This is a call to engage, to learn, and to contribute. As stewards of our nation's future, we invite you to delve into the data, understand the trends, and join the dialogue. Together, let's navigate the path towards a resilient and sustainable Singapore."))
     ),
     
     tabPanel("Live Weather Forecast", 
@@ -131,7 +129,10 @@ fluidPage(
              ),
              mainPanel(
                width = 9,
-               plotOutput("geo_plot")
+               navset_card_underline(
+                 nav_panel("Temperature", plotOutput("geo_plot")),
+                 nav_panel("Rainfall")
+               )
              )
            )
     ),
