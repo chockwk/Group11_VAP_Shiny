@@ -1,5 +1,4 @@
-pacman::p_load(shiny, tidyverse, ggrepel, DT, plotly, forecast, stats, zoo, shinyjs, ggstatsplot, gganimate, ggthemes,
-               sf, tmap, terra, viridis, sp, raster)
+pacman::p_load(shiny, tidyverse, ggrepel, DT, plotly, forecast, gstat, stats, zoo, shinyjs, ggstatsplot, gganimate, ggthemes, sf, tmap, terra, viridis, sp, raster)
 
 # import data
 temp_data <-read_rds("data/rds/temperature.rds")

@@ -1,32 +1,5 @@
 # Load required packages
-pacman::p_load(bslib, shiny, shinydashboard, shinyWidgets)
-
-sidebar <- dashboardSidebar(
-  width = 100,
-  sidebarMenu(
-      menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
-      menuItem("Widgets", icon = icon("th"), tabName = "widgets", badgeLabel = "new", badgeColor = "green")
-      ),
-  dashboardBody()
-)
-
-body <- dashboardBody(
-  tabItems(
-    tabItem(tabName = "dashboard",
-            h2("Dashboard tab content")
-    ),
-    
-    tabItem(tabName = "widgets",
-            h2("Widgets tab content")
-    )
-  )
-)
-
-dashboardPage(
-  dashboardHeader(title = "Simple tabs"),
-  sidebar,
-  body
-)
+pacman::p_load(bslib, shiny, shinydashboard, shinyWidgets, plotly)
 
 # Define UI for application
 fluidPage(
