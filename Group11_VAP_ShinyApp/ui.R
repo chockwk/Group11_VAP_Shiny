@@ -483,7 +483,7 @@ fluidPage(
                                            selected = "Rainfall"),
                                selectInput("iCheck_DPlot", "Select plot:",
                                            c("STL Decomposition" = "D",
-                                             "ACF" = "ACF"),
+                                             "PACF" = "PACF"),
                                            selected = "Decomposition"),
                                actionButton("button_Decomposition_check", "Check")
                              ),
@@ -539,8 +539,8 @@ fluidPage(
                                                "MeanSquareError" = "mse",
                                                "Ave MSE" = "amse"),
                                              selected = "sigma"),
-                                 sliderInput("iETS_Years", "Number of Years to forecast:", 
-                                             1, 10, value = 3),
+                                 sliderInput("iETS_Months", "Number of months to forecast:", 
+                                             3, 12, value = 5),
                                  
                                  actionButton("button_ETS_plot", "Forecast")
                                ),
@@ -595,8 +595,8 @@ fluidPage(
                                                "1" = 1,
                                                "2" = 2),
                                              selected = "0"), 
-                                 sliderInput("iARIMA_Years", "Number of Years to forecast:", 
-                                             1, 10, value = 3),
+                                 sliderInput("iARIMA_Months", "Number of months to forecast:", 
+                                             3, 12, value = 5),
                                  
                                  actionButton("button_ARIMA_plot", "Forecast")
                                ),
@@ -605,6 +605,7 @@ fluidPage(
                                  HTML("<br>You can examine whether the variable time series selected is stationary or not."),
                                  HTML("<br>You can also check its ACF plot of residuals."),
                                  HTML("<br>It takes some time to plot the graph. Your patience is appreciated."),                                  
+                                 HTML("<br>If it shows 'No model', means the seasonal combination produces no model."),                                  
                                  fluidRow(
                                    column(4, uiOutput("text_ARIMA_IC1")),
                                    column(4, uiOutput("text_ARIMA_IC2")),

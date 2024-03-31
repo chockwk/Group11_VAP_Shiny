@@ -18,6 +18,7 @@ data_ts <- merged_data %>%
             MinTemp = ifelse(all(MinTemp == 0), NA, min(MinTemp[MinTemp != 0], na.rm = TRUE)),
             Rainfall = mean(TotalRainfall)) %>% 
   mutate(YearMonth = yearmonth(Date)) %>% 
+  filter(Date > '2015-1-1') %>% 
   ungroup()
 
 data_EDA <- data_ts %>% 
@@ -904,15 +905,17 @@ function(input, output, session) {
   
   #### Forecast Models #####
 
+  #### Forecast Models #####
+  
   outputPlotETS <- reactive ({
-   if (input$iETS_Region != "All") {
+    if (input$iETS_Region != "All") {
       data <- data_region_ts %>% 
         filter(Region == input$iETS_Region) %>% 
         as_tsibble(index = (YearMonth))
     } else {
       data <-data_ts
     }
-
+    
     if (input$iETS_Variable == "Rainfall"){
       data <- data %>% rename(Value = Rainfall)
       displayText = "Rainfall"
@@ -928,7 +931,7 @@ function(input, output, session) {
       displayText = "Temperature"
       displayUnit = "°C"
     }
- 
+    
     ets_model <- data %>%
       model(ETS(Value ~ error(input$iETS_Error) + 
                   trend(input$iETS_Trend) + season(input$iETS_Season), 
@@ -945,9 +948,9 @@ function(input, output, session) {
            "mae" = opt_crit_value <-glance(ets_model)$MAE,
            "mse" = opt_crit_value <-glance(ets_model)$MSE,
            "amse" = opt_crit_value <-glance(ets_model)$AMSE
-             )
+    )
     
-    forecast_values <- forecast(ets_model, h = input$iETS_Years * 12)  
+    forecast_values <- forecast(ets_model, h = input$iETS_Months)  
     
     # quantiles <- forecast_values %>%
     #   group_by(.model) %>%
@@ -998,7 +1001,7 @@ function(input, output, session) {
     
     list(plot = p, AIC = aic, BIC = bic, AICc = aicc,
          optValue = opt_crit_value)
-
+    
   })
   
   output$plot_ETS <- renderPlot({
@@ -1044,7 +1047,6 @@ function(input, output, session) {
     } 
   })
   
-  
   outputPlotARIMA <- reactive ({
     if (input$iARIMA_Region != "All") {
       data <- data_region_ts %>% 
@@ -1053,7 +1055,7 @@ function(input, output, session) {
     } else {
       data <-data_ts
     }
-
+    
     if (input$iARIMA_Variable == "Rainfall"){
       data <- data %>% rename(Value = Rainfall)
       displayText = "Rainfall"
@@ -1070,25 +1072,38 @@ function(input, output, session) {
       displayUnit = "°C"
     }
     
-    aic <- 0
     ets_model <- data %>%
       model(ARIMA(Value ~ pdq(as.numeric(input$iARIMA_p),
                               as.numeric(input$iARIMA_d),
                               as.numeric(input$iARIMA_q))))
-
-    aic <- glance(ets_model)$AIC
-    bic <- glance(ets_model)$BIC
-    aicc <- glance(ets_model)$AICc
     
-    forecast_values <- forecast(ets_model, h = input$iARIMA_Years * 12)  
+    if (all(is.na(fitted(ets_model)$.fitted))) {
+      aic <- "no model"
+      bic <- "no model"
+      aicc <- "no model"
+      success <- 0
+    } 
+    else {
+      aic <- glance(ets_model)$AIC
+      bic <- glance(ets_model)$BIC
+      aicc <- glance(ets_model)$AICc
+      
+      forecast_values <- forecast(ets_model, h = input$iARIMA_Months) 
+      p <- forecast_values %>% autoplot(data) + 
+        ylab(displayText) + 
+        xlab("Year") +
+        theme_minimal()
+      
+      success <- 1
+    }
     
-    quantiles <- forecast_values %>%
-      group_by(.model) %>%
-      summarise(lower_80 = quantile(Value, 0.1),
-                upper_80 = quantile(Value, 0.9),
-                lower_95 = quantile(Value, 0.025),
-                upper_95 = quantile(Value, 0.975))
-    
+    # quantiles <- forecast_values %>%
+    #   group_by(.model) %>%
+    #   summarise(lower_80 = quantile(Value, 0.1),
+    #             upper_80 = quantile(Value, 0.9),
+    #             lower_95 = quantile(Value, 0.025),
+    #             upper_95 = quantile(Value, 0.975))
+    #
     # p <- ggplot() +
     #   geom_line(data = data, 
     #             aes(x = Date, y = Value, color = "Observed"), 
@@ -1122,25 +1137,26 @@ function(input, output, session) {
     # 
     #list(plot = ggplotly(p, tooltip = "text"), AIC = aic, BIC = bic, AICc = aicc)
     
-    p <- forecast_values %>% autoplot(data) + 
-      ylab(displayText) + 
-      xlab("Year") +
-      theme_minimal()
-      
-    list(plot = p, AIC = aic, BIC = bic, AICc = aicc)
+    list(Success = success, plot = p, AIC = aic, BIC = bic, AICc = aicc)
   })
   
   output$plot_ARIMA <- renderPlot({
     if( input$button_ARIMA_plot > 0) {
       plot_and_ic <- isolate(outputPlotARIMA())
-      plot_and_ic$plot        
+      if (plot_and_ic$Success) {
+        plot_and_ic$plot          
+      }
     }
   })
   
   output$text_ARIMA_IC1 <- renderUI({
     if( input$button_ARIMA_plot > 0) {
       plot_and_ic <- isolate(outputPlotARIMA())
-      ic_value <- paste("AIC:", round(plot_and_ic$AIC,1))
+      if (plot_and_ic$Success == 1) {
+        ic_value <- paste("AIC:", round(plot_and_ic$AIC,1))
+      } else {
+        ic_value <- paste("AIC:", plot_and_ic$AIC)
+      }
       tags$div(class = "bordered-text", ic_value)
     } 
   })
@@ -1148,23 +1164,31 @@ function(input, output, session) {
   output$text_ARIMA_IC2 <- renderUI({
     if( input$button_ARIMA_plot > 0) {
       plot_and_ic <- isolate(outputPlotARIMA())
-      ic_value <- paste("BIC:", round(plot_and_ic$BIC,1))
+      if (plot_and_ic$Success) {
+        ic_value <- paste("BIC:", round(plot_and_ic$BIC,1))
+      } else {
+        ic_value <- paste("BIC:", plot_and_ic$AIC)
+      }
       tags$div(class = "bordered-text", ic_value)
-    }
+    } 
   })
   
   output$text_ARIMA_IC3 <- renderUI({
     if( input$button_ARIMA_plot > 0) {
       plot_and_ic <- isolate(outputPlotARIMA())
-      ic_value <- paste("AICc:", round(plot_and_ic$AICc,1))
+      if (plot_and_ic$Success) {
+        ic_value <- paste("AICc:", round(plot_and_ic$AICc,1))
+      } else {
+        ic_value <- paste("AICc:", plot_and_ic$AICc)
+      }
       tags$div(class = "bordered-text", ic_value)
-     } 
+    } 
   })
   
   #### Pre-forecast checks ####
-
+  
   outputTextStationary <- reactive ({
-
+    
     if (input$iCheck_STest == "ADF") {
       if (input$iCheck_SVariable == "Rainfall"){
         result <- adf.test(data_ts$Rainfall)
@@ -1184,8 +1208,8 @@ function(input, output, session) {
                           "<br>p-value:", result$p.value,
                           "<br>significant level:", input$iCheck_SAlpha,
                           "<br>Conclusion:", ifelse(result$p.value < input$iCheck_SAlpha, 
-                                                "Reject null hypothesis (stationary)", 
-                                                "Fail to reject null hypothesis (non-stationary)"))
+                                                    "Reject null hypothesis (stationary)", 
+                                                    "Fail to reject null hypothesis (non-stationary)"))
       
     } else {
       if (input$iCheck_SVariable == "Rainfall"){
@@ -1210,13 +1234,13 @@ function(input, output, session) {
                           "<br>significant level:", input$iCheck_SAlpha,
                           "<br>critical value:", criticalValue,
                           "<br>Conclusion:", ifelse(result@teststat < criticalValue, 
-                                                "Reject null hypothesis (Not stationary)", 
-                                                "Fail to reject null hypothesis (Stationary)"))
+                                                    "Reject null hypothesis (Not stationary)", 
+                                                    "Fail to reject null hypothesis (Stationary)"))
     }
   })
   
   output$text_Stationary <- renderText({
-   if (input$button_Stationary_check > 0) {
+    if (input$button_Stationary_check > 0) {
       isolate(outputTextStationary())
     }
     else{
@@ -1263,4 +1287,5 @@ function(input, output, session) {
     }
   })
 }
+
 
