@@ -1,53 +1,41 @@
-pacman::p_load(shiny, tidyverse, ggrepel, DT, plotly, forecast, gstat, stats, zoo, shinyjs, ggstatsplot, gganimate, ggthemes, sf, tmap, terra, viridis, sp, raster)
+pacman::p_load(shiny, gstat, tidyverse, ggrepel, DT, plotly, 
+               forecast, stats, shinyjs, ggstatsplot, gganimate, 
+               ggthemes, sf, tmap, terra, viridis, sp, raster, datagovsgR, 
+               tsibble, fable, forecast, tseries, urca, tidyr, ggHoriPlot)
 
 # import data
 temp_data <-read_rds("data/rds/temperature.rds")
-
-Temp_YM <- temp_data %>% 
-  group_by(Year, Month, Region) %>% 
-  reframe(Date = Date,
-          AveMeanTemp = round(mean(MeanTemp, na.rm = TRUE),1),
-          MaxMaxTemp = max(MaxTemp, na.rm = TRUE),
-          MinMinTemp = min(MinTemp, na.rm = TRUE)) %>% 
-  distinct() %>% 
-  ungroup() %>% 
-  filter(!is.na(AveMeanTemp))
-
-Temp_YM_allR <- temp_data %>% 
-  group_by(Year, Month) %>% 
-  reframe(Date = Date,
-          AveMeanTemp = round(mean(MeanTemp, na.rm = TRUE),1),
-          MaxMaxTemp = max(MaxTemp, na.rm = TRUE),
-          MinMinTemp = min(MinTemp, na.rm = TRUE)) %>% 
-  distinct() %>%
-  ungroup() %>% 
-  filter(!is.na(AveMeanTemp))
-
 rain_data <-read_rds("data/rds/rainfall.rds")
 
-Rain_YM <- rain_data %>% 
-  group_by(Region, Year, Month) %>% 
-  reframe(Date = Date,
-          TotalRain = round(sum(TotalRainfall, na.rm = TRUE),1),
-          TotalRain30 = sum(TotalRainfall30, na.rm = TRUE),
-          TotalRain60 = sum(TotalRainfall60, na.rm = TRUE),
-          TotalRain120 = sum(TotalRainfall120, na.rm = TRUE)) %>% 
-  distinct() %>%
-  ungroup() %>% 
-  filter(!is.na(TotalRain))
+#### Forecast data ####
+merged_data <- merge(temp_data, rain_data, 
+                     by = c("Date", "Region", "Station")) 
 
-Rain_YM_allR <- rain_data %>% 
-  group_by(Year, Month) %>% 
-  reframe(Date = Date,
-          TotalRain = round(sum(TotalRainfall, na.rm = TRUE),1),
-          TotalRain30 = sum(TotalRainfall30, na.rm = TRUE),
-          TotalRain60 = sum(TotalRainfall60, na.rm = TRUE),
-          TotalRain120 = sum(TotalRainfall120, na.rm = TRUE)) %>% 
-  distinct() %>%
-  ungroup() %>% 
-  filter(!is.na(TotalRain))
+data_ts <- merged_data %>%     
+  group_by(Date) %>% 
+  summarise(AveTemp = mean(MeanTemp, na.rm = TRUE),
+            MaxTemp = max(MaxTemp, na.rm = TRUE),
+            MinTemp = ifelse(all(MinTemp == 0), NA, min(MinTemp[MinTemp != 0], na.rm = TRUE)),
+            Rainfall = mean(TotalRainfall)) %>% 
+  mutate(YearMonth = yearmonth(Date)) %>% 
+  ungroup()
 
-### ---- Data prep for CDA ----
+data_EDA <- data_ts %>% 
+  as_tsibble(index = Date) 
+
+data_ts <- data_ts %>% 
+  as_tsibble(index = (YearMonth)) 
+
+data_region_ts <- merged_data %>%     
+  group_by(Region, Date) %>% 
+  summarise(AveTemp = mean(MeanTemp, na.rm = TRUE),
+            MaxTemp = max(MaxTemp, na.rm = TRUE),
+            MinTemp = ifelse(all(MinTemp == 0), NA, min(MinTemp[MinTemp != 0], na.rm = TRUE)),
+            Rainfall = mean(TotalRainfall)) %>% 
+  mutate(YearMonth = yearmonth(Date)) %>% 
+  ungroup()
+
+#### CDA ####
 
 Temp_Annual <- temp_data %>%
   group_by(Station, Region, Year) %>%
@@ -103,7 +91,7 @@ Rainfall_Monthly <- rain_data %>%
   ungroup() %>% 
   filter(!is.na(Total_Rf))
 
-# Timeseries
+#### Timeseries data ####
 
 # Prepare temperature data
 MeanTemp_Year <- temp_data %>% 
@@ -119,7 +107,7 @@ TotalRainfall_Year <- rain_data %>%
 
 rainfall_time <- left_join(rain_data, TotalRainfall_Year, by = "Year")
 
-# Correlation
+#### Correlation data ####
 
 weather_YM <- merge(rain_data, temp_data, by=c("Station", "Region", "Year", "Month", "Date"))
 
@@ -137,12 +125,55 @@ weather_Y <- weather_YM %>%
   ) %>%
   ungroup()
 
+#### Geospatial data ####
+
+stations <- read.csv("data/aspatial/RainfallStation.csv")
+mpsz <- st_read(dsn = "data/geospatial", layer = "MPSZ-2019") %>% 
+  st_transform(crs=3414)
+
+station_to_PA <- c(
+  "Admiralty" = "WOODLANDS",
+  "Ang Mo Kio" = "ANG MO KIO",
+  "Boon Lay (East)" = "BOON LAY",
+  "Changi" = "CHANGI",
+  "Choa Chu Kang (South)" = "CHOA CHU KANG",
+  "Clementi" = "CLEMENTI",
+  "Clementi" = "QUEENSTOWN",
+  "East Coast Parkway" = "BEDOK",
+  "Jurong (West)" = "JURONG WEST",
+  "Khatib" = "YISHUN",
+  "Marina Barrage" = "MARINE PARADE",
+  "Marina Barrage" = "MARINA EAST",
+  "Marina Barrage" = "MARINA SOUTH",
+  "Marina Barrage" = "DOWNTOWN CORE",
+  "Newton" = "NEWTON",
+  "Newton" = "NOVENA",
+  "Newton" = "ORCHARD",
+  "Newton" = "MUSUEM",
+  "Newton" = "RIVER VALLEY",
+  "Pasir Panjang" = "PASIR PANJANG",
+  "Paya Lebar" = "PAYA LEBAR",
+  "Seletar" = "SELETAR",
+  "Sembawang" = "SEMBAWANG",
+  "Tai Seng" = "HOUGANG",
+  "Tengah" = "TENGAH",
+  "Tuas South" = "TUAS"
+)
+
+weather_Y$PA <- station_to_PA[weather_Y$Station]
+weather_Y <- weather_Y[, c("PA", setdiff(names(weather_Y), "PA"))]
+mpszweather <- left_join(mpsz, weather_Y, by = c("PLN_AREA_N" = "PA"))
+
+mpszweather <- mpszweather %>% 
+  filter(!if_all(c(Station, MeanTemp, TotalRainfall), is.na))
+head(mpszweather)
+
 
 
 # Define server logic
 function(input, output, session) {
   
-  # Dashboard Animation
+  #### Dashboard Animation ####
   
   # Render temp_plot
   output$temp_plot <- renderUI({
@@ -172,7 +203,55 @@ function(input, output, session) {
          alt = "Rainfall Plot")
   }, deleteFile = FALSE)
   
-  # Live Forecast
+  #### Live Forecast ####
+  
+  # Current Time
+  output$currentTime <- renderPrint({
+    format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+  })
+  
+  
+  # Air Temperature
+  output$airTemperature <- renderText({
+    # Assuming weather_reading function retrieves weather readings
+    date_time <- format(Sys.time(), "%Y-%m-%dT%H:%M:%S")
+    weather_data <- weather_reading(date = date_time)
+    
+    # Define a named vector to map station IDs to their corresponding names
+    station_names <- c("S43" = "North", "S44" = "West", "S115" = "East", "S111" = "Central")
+    
+    # Extract station IDs and temperature values
+    stations <- weather_data$air_temp$station_id
+    temperatures <- weather_data$air_temp$value
+    
+    # Initialize an empty character vector to store formatted temperature readings
+    formatted_temperatures <- character(length(stations))
+    
+    # Loop through each station and temperature value, and format them
+    for (i in seq_along(stations)) {
+      # Get the corresponding station name
+      station_name <- ifelse(stations[i] %in% names(station_names), station_names[stations[i]], stations[i])
+      formatted_temperatures[i] <- paste(station_name, ": ", temperatures[i], "°C", sep = "")
+    }
+    
+    # Combine formatted temperatures into a single string with line breaks
+    paste(formatted_temperatures, collapse = "\n")
+  })
+  
+  # UV Index
+  output$uvIndex <- renderPrint({
+    formatted_datetime <- format(Sys.time(), "%Y-%m-%dT%H:%M:%S")
+    latest_uvi <- head(uvi(formatted_datetime), n = 1)
+    print(latest_uvi$value)
+  })
+  
+  # PSI
+  output$psiData <- renderPrint({
+    # Assuming psi function retrieves PSI data
+    date_time <- format(Sys.time(), "%Y-%m-%dT%H:%M:%S")
+    psi_data <- psi(date = date_time)
+    print(psi_data)
+  })
   
   # Function to retrieve weather data
   getWeatherData <- reactive({
@@ -191,22 +270,6 @@ function(input, output, session) {
     })
   })
   
-  output$closestTimestamp <- renderText({
-    weather_data <- getWeatherData()
-    if (is.null(weather_data)) {
-      return("No data available")
-    }
-    paste("Closest timestamp:", weather_data$closest_timestamp)
-  })
-  
-  output$forecastValid <- renderText({
-    weather_data <- getWeatherData()
-    if (is.null(weather_data)) {
-      return("No data available")
-    }
-    paste("Forecast valid to:", weather_data$forecast_valid)
-  })
-  
   output$weatherTable <- renderDataTable({
     weather_data <- getWeatherData()
     if (is.null(weather_data)) {
@@ -220,12 +283,12 @@ function(input, output, session) {
   })
   
   
-  # Timeseries
+  #### Timeseries ####
   
   observeEvent(input$showPlotButton, {
     
     # Temperature plot
-    output$temp_cycle_plot <- renderPlot({
+    output$temp_cycleplot <- renderPlot({
       
       # User input
       req(input$selected_years)
@@ -259,8 +322,36 @@ function(input, output, session) {
         scale_color_manual(values = palette)
     })
     
+    output$temp_horiplot <- renderPlot({
+      
+      # User input
+      req(input$selected_years)
+      
+      # Filtering the dataframe for the selected years
+      hori_input <- temp_time %>%
+        filter(Year %in% input$selected_years)
+      
+      # Plot with darker pastel colors
+      ggplot(data = hori_input) +
+        geom_horizon(aes(x = Month, y = MeanTemp),
+                     origin = "midpoint",
+                     horizonscale = 6) +
+        facet_grid(Station ~ .) +
+        theme_few() +
+        scale_fill_hcl(palette = 'RdBu') +
+        theme(panel.spacing.y = unit(0, "lines"),
+              strip.text.y = element_text(size =5, angle = 0, hjust = 0),
+              legend.position = "none",
+              axis.text.x = element_text(size = 7),
+              axis.text.y = element_blank(),
+              axis.ticks.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              panel.border = element_blank())
+    })
+    
     # Rainfall plot
-    output$rain_cycle_plot <- renderPlot({
+    output$rain_cycleplot <- renderPlot({
       
       # User input
       req(input$selected_years)
@@ -295,71 +386,164 @@ function(input, output, session) {
         scale_color_manual(values = palette)
     })
     
+    output$rain_horiplot <- renderPlot({
+      
+      # User input
+      req(input$selected_years)
+      
+      # Filtering the dataframe for the selected years
+      hori_input <- rainfall_time %>%
+        filter(Year %in% input$selected_years)
+      
+      
+      # Plot with darker pastel colors
+      ggplot(data = hori_input) +
+        geom_horizon(aes(x = Month, y = TotalRainfall),
+                     origin = "midpoint",
+                     horizonscale = 6) +
+        facet_grid(Station ~ .) +
+        theme_few() +
+        scale_fill_hcl(palette = 'RdBu') +
+        theme(panel.spacing.y = unit(0, "lines"),
+              strip.text.y = element_text(size =5, angle = 0, hjust = 0),
+              legend.position = "none",
+              axis.text.x = element_text(size = 7),
+              axis.text.y = element_blank(),
+              axis.ticks.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              panel.border = element_blank())
+    })
+    
   })
   
-  # Geospatial
+  #### Geospatial ####
   
-  # Data loading should be handled outside of reactive context if they are static
-  stations <- read.csv("data/aspatial/RainfallStation.csv")
-  mpsz <- st_read(dsn = "data/geospatial", layer = "MPSZ-2019") %>% 
-    st_transform(crs=3414)
+  output$temp_choromap <- renderPlot({
+    
+    # Plot the outline of mpsz
+    outline <- tm_shape(mpsz) +
+      tm_borders()
+    
+    # Plot mpszweather on top of the outline
+    temp <- tm_shape(mpszweather) +
+      tm_polygons(col = "MeanTemp", palette = "Oranges", style = input$style_param) +
+      tm_layout(main.title = "Choropleth Map") 
+    
+    # Combine the outline and weather map
+    tempoutline <- outline + temp
+    
+    # Display the map
+    print(tempoutline)
+    tmap_mode("plot")
+    tmap_options(check.and.fix = TRUE)
+  })
   
-  # Assuming temp_data and rain_data are already loaded into the R session
-  
-  output$geo_plot <- renderPlot({
-    # Check which variable to analyze and select the corresponding data frame
-    data_sf <- if (input$analysis_variable == "Temperature") {
-      temp_data %>% 
-        dplyr::select(Station, MeanTemp) %>% 
-        left_join(stations, by = "Station") %>% 
-        st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326) %>% 
-        st_transform(crs = 3414)
-    } else {
-      rain_data %>% 
-        dplyr::select(Station, TotalRainfall) %>% 
-        left_join(stations, by = "Station") %>% 
-        st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326) %>% 
-        st_transform(crs = 3414)
-    }
-    
-    # Prepare for geospatial analysis
-    analysis_var <- if(input$analysis_variable == "Temperature") "MeanTemp" else "TotalRainfall"
-    
-    # Conduct geospatial analysis using gstat
-    model <- vgm(psill = 0.5, model = input$model_option, range = input$range_param, nugget = 0.1)
-    res <- gstat(formula = as.formula(paste(analysis_var, "~ 1")), 
-                 data = data_sf,
-                 nmax = input$n_neighbors,
-                 model = model)
-    
-    # Predict the spatial distribution
+  output$temp_geoplot <- renderPlot({
+    tpdata_sf <- temp_data %>% 
+      dplyr::select(Station, MeanTemp) %>% 
+      left_join(stations, by = "Station") %>% 
+      st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326) %>% 
+      st_transform(crs = 3414)
+
     grid <- terra::rast(mpsz, nrows = 690, ncols = 1075)
     xy <- terra::xyFromCell(grid, 1:ncell(grid))
     coop <- st_as_sf(as.data.frame(xy), coords = c("x", "y"), crs = st_crs(mpsz))
     coop <- st_filter(coop, mpsz)
+
+    res <- gstat(formula = MeanTemp ~ 1,
+                 locations = tpdata_sf,
+                 nmax = input$n_neighbors,
+                 set = list(idp = 0))
+    
     resp <- predict(res, coop)
     
-    resp$x <- st_coordinates(resp1)[,1]
-    resp$y <- st_coordinates(resp1)[,2]
-    resp$pred <- resp1$var1.pred
+    resp$x <- st_coordinates(resp)[,1]
+    resp$y <- st_coordinates(resp)[,2]
+    resp$pred <- resp$var1.pred
     
     pred <- terra::rasterize(resp, grid, field = "pred", fun = "mean")
     
-    # Plot using tmap
     tmap_mode("plot")
     tm <- tm_shape(pred) +
       tm_raster(alpha = 0.6, palette = "viridis") +
-      tm_layout(main.title = paste("Geospatial Analysis Result:", input$analysis_variable)) +
+      tm_layout(main.title = "Isohyet Map with Interpolation") +
       tm_compass(type = "8star", size = 2) +
       tm_scale_bar() +
       tm_grid(alpha = 0.2)
-    
-    # Print the plot to the Shiny app
     print(tm)
+    
+    v <- variogram(MeanTemp ~ 1, data = tpdata_sf)
+    
+    fv <- fit.variogram(object = v,
+                        model = vgm(psill = 0.5, model = input$model_option, range = input$range_param, nugget = 0.1),
+                        fit.method = input$fit_method)
   })
   
   
-  # Correlation
+  output$rain_choromap <- renderPlot({
+    
+    # Plot the outline of mpsz
+    outline <- tm_shape(mpsz) +
+      tm_borders()
+    
+    # Plot mpszweather on top of the outline
+    rain <- tm_shape(mpszweather) +
+      tm_polygons(col = "TotalRainfall", palette = "Blues", style = input$style_param) +
+      tm_layout(main.title = "Choropleth Map") 
+    
+    # Combine the outline and weather map
+    rainoutline <- outline + rain
+    
+    # Display the map
+    print(rainoutline)
+    tmap_mode("plot")
+    tmap_options(check.and.fix = TRUE)
+
+  })
+  
+  output$rain_geoplot <- renderPlot({
+    rfdata_sf <- rain_data %>% 
+        dplyr::select(Station, TotalRainfall) %>% 
+        left_join(stations, by = "Station") %>% 
+        st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326) %>% 
+        st_transform(crs = 3414)
+    
+    grid <- terra::rast(mpsz, nrows = 690, ncols = 1075)
+    xy <- terra::xyFromCell(grid, 1:ncell(grid))
+    coop <- st_as_sf(as.data.frame(xy), coords = c("x", "y"), crs = st_crs(mpsz))
+    coop <- st_filter(coop, mpsz)
+    
+    res <- gstat(formula = TotalRainfall ~ 1,
+                 locations = rfdata_sf,
+                 nmax = input$n_neighbors,
+                 set = list(idp = 0))
+    
+    resp <- predict(res, coop)
+    
+    resp$x <- st_coordinates(resp)[,1]
+    resp$y <- st_coordinates(resp)[,2]
+    resp$pred <- resp$var1.pred
+    
+    pred <- terra::rasterize(resp, grid, field = "pred", fun = "mean")
+    
+    tmap_mode("plot")
+    tm <- tm_shape(pred) +
+      tm_raster(alpha = 0.6, palette = "viridis") +
+      tm_layout(main.title = "Isohyet Map with Interpolation") +
+      tm_compass(type = "8star", size = 2) +
+      tm_scale_bar() +
+      tm_grid(alpha = 0.2)
+    print(tm)
+    
+    v <- variogram(TotalRainfall ~ 1, data = rfdata_sf)
+    
+    fv <- fit.variogram(object = v,
+                        model = vgm(psill = 0.5, model = input$model_option, range = input$range_param, nugget = 0.1),
+                        fit.method = input$fit_method)
+  })
+  
+  #### Correlation ####
   
   options(scipen = 999)
   
@@ -387,7 +571,7 @@ function(input, output, session) {
     plotcorrelation(input$variable, input$method, input$association_type, input$marginal_type)
   })
   
-  # CDA - Temperature by Station
+  #### CDA - Temperature by Station ####
   
   plot_station_temp <- function(measurement, 
                                 selected_stations = c("Admiralty", "Ang Mo Kio", "Boon Lay (East)"), 
@@ -467,7 +651,7 @@ function(input, output, session) {
                       input$s_temp_psize)
   })
   
-  # CDA - Rainfall by Station
+  #### CDA - Rainfall by Station ####
   
   plot_station_rf <- function(measurement, 
                               selected_stations = c("Admiralty", "Ang Mo Kio", "Boon Lay (East)"), 
@@ -552,7 +736,7 @@ function(input, output, session) {
                     input$r_rf_psize)
   })
   
-  # CDA - Temperature by Region
+  #### CDA - Temperature by Region ####
   
   plot_region_temp <- function(measurement, 
                                selected_regions = c("Central", "East", "North", "North-East", "West"), 
@@ -632,7 +816,7 @@ function(input, output, session) {
                      input$r_temp_psize)
   })
   
-  # CDA - Rainfall by Region
+  #### CDA - Rainfall by Region ####
   
   plot_region_rf <- function(measurement, 
                              selected_regions = c("Central", "East", "North", "North-East", "West"), 
@@ -718,106 +902,364 @@ function(input, output, session) {
                    input$r_rf_psize)
   })
   
-  # Forecast
-  
-  forecastPlotReady <- reactiveValues(ok = FALSE)
+  #### Forecast Models #####
 
-  observeEvent(input$Forecast_Button, {
-    shinyjs::disable("Forecast_Button")
-    Sys.sleep(2)  # Simulate some processing time
-    forecastPlotReady$ok <- TRUE
+  outputPlotETS <- reactive ({
+   if (input$iETS_Region != "All") {
+      data <- data_region_ts %>% 
+        filter(Region == input$iETS_Region) %>% 
+        as_tsibble(index = (YearMonth))
+    } else {
+      data <-data_ts
+    }
+
+    if (input$iETS_Variable == "Rainfall"){
+      data <- data %>% rename(Value = Rainfall)
+      displayText = "Rainfall"
+      displayUnit = "mm"
+    } else {
+      if (input$iETS_Variable == "MeanTemp") {
+        data <- data %>% rename(Value = AveTemp)
+      } else if (input$iETS_Variable == "MaxTemp") {
+        data <- data %>% rename(Value = MaxTemp)
+      } else {
+        data <- data %>% rename(Value = MinTemp)
+      }
+      displayText = "Temperature"
+      displayUnit = "°C"
+    }
+ 
+    ets_model <- data %>%
+      model(ETS(Value ~ error(input$iETS_Error) + 
+                  trend(input$iETS_Trend) + season(input$iETS_Season), 
+                opt_crit = input$iETS_OptCrit))
+    
+    #can get the IC and OC values
+    aic <- glance(ets_model)$AIC
+    bic <- glance(ets_model)$BIC
+    aicc <- glance(ets_model)$AICc
+    
+    switch(input$iETS_OptCrit,
+           "lik" = opt_crit_value <-glance(ets_model)$log_lik,
+           "sigma" = opt_crit_value <-glance(ets_model)$sigma2,
+           "mae" = opt_crit_value <-glance(ets_model)$MAE,
+           "mse" = opt_crit_value <-glance(ets_model)$MSE,
+           "amse" = opt_crit_value <-glance(ets_model)$AMSE
+             )
+    
+    forecast_values <- forecast(ets_model, h = input$iETS_Years * 12)  
+    
+    # quantiles <- forecast_values %>%
+    #   group_by(.model) %>%
+    #   summarise(lower_80 = quantile(Value, 0.1),
+    #             upper_80 = quantile(Value, 0.9),
+    #             lower_95 = quantile(Value, 0.025),
+    #             upper_95 = quantile(Value, 0.975))
+    # 
+    # p <- ggplot() +
+    #   geom_line(data = data, 
+    #             aes(x = Date, y = Value, color = "Observed"), 
+    #             linetype = "solid") +
+    #   geom_line(data = forecast_values, 
+    #             aes(x = as.Date(YearMonth), y = .mean, color = "Forecast"), 
+    #             linetype = "dashed") +
+    #   geom_point(data = forecast_values, 
+    #              aes(x = as.Date(YearMonth), y = .mean, 
+    #                  text = paste("YearMonth:", YearMonth, 
+    #                               "<br>Forecasted:", round(.mean, 1), displayUnit)),
+    #              size = 1, color = "red") +
+    #   geom_point(data = data, 
+    #              aes(x = Date, y = Value, 
+    #                  text = paste("YearMonth:", YearMonth, 
+    #                               "<br>Observed:", round(Value, 1), displayUnit)),
+    #              size = 1, color = "blue") +
+    #   geom_ribbon(data = quantiles, 
+    #               aes(x = as.Date(YearMonth), 
+    #                   ymin = lower_80, 
+    #                   ymax = upper_80), fill = "black", alpha = 0.5) +
+    #   geom_ribbon(data = quantiles, 
+    #               aes(x = as.Date(YearMonth), 
+    #                   ymin = lower_95, 
+    #                   ymax = upper_95), fill = "gray", alpha = 0.5) +
+    #   xlab("Year") +
+    #   ylab(displayText) +
+    #   ggtitle(paste("Forecast ", displayText)) +
+    #   scale_color_manual(values = c("Observed" = "blue", "Forecast" = "red")) +
+    #   theme_minimal()
+    # 
+    # list(plot = ggplotly(p, tooltip = "text"), 
+    #      AIC = aic, BIC = bic, AICc = aicc,
+    #      optValue = opt_crit_value)
+    
+    p <- forecast_values %>% autoplot(data) +
+      ylab(displayText) + 
+      xlab("Year") +
+      theme_minimal()
+    
+    list(plot = p, AIC = aic, BIC = bic, AICc = aicc,
+         optValue = opt_crit_value)
+
   })
   
-  output$plotForecast <- renderPlotly({
-    if (forecastPlotReady$ok) {
-      shinyjs::enable("Forecast_Button")
+  output$plot_ETS <- renderPlot({
+    if( input$button_ETS_plot > 0) {
+      plot_and_ic <- isolate(outputPlotETS())
+      plot_and_ic$plot
+    }
+  })
+  
+  output$text_ETS_IC1 <- renderUI({
+    if( input$button_ETS_plot > 0) {
+      plot_and_ic <- isolate(outputPlotETS())
+      ic_value <- paste("AIC:", round(plot_and_ic$AIC,1))
+      div <- tags$div(class = "bordered-text", ic_value)
+      div
+    } 
+  })
+  
+  output$text_ETS_IC2 <- renderUI({
+    if( input$button_ETS_plot > 0) {
+      plot_and_ic <- isolate(outputPlotETS())
+      ic_value <- paste("BIC:", round(plot_and_ic$BIC,1))
+      div <- tags$div(class = "bordered-text", ic_value)
+      div
+    } 
+  })
+  
+  output$text_ETS_IC3 <- renderUI({
+    if( input$button_ETS_plot > 0) {
+      plot_and_ic <- isolate(outputPlotETS())
+      ic_value <- paste("AICc:", round(plot_and_ic$AICc,1))
+      div <- tags$div(class = "bordered-text", ic_value)
+      div
+    } 
+  })
+  
+  output$text_ETS_OptValue <- renderUI({
+    if( input$button_ETS_plot > 0) {
+      plot_and_ic <- isolate(outputPlotETS())
+      ic_value <- paste(input$iETS_OptCrit, ":", round(plot_and_ic$optValue,1))
+      div <- tags$div(class = "bordered-text", ic_value)
+      div
+    } 
+  })
+  
+  
+  outputPlotARIMA <- reactive ({
+    if (input$iARIMA_Region != "All") {
+      data <- data_region_ts %>% 
+        filter(Region == input$iARIMA_Region) %>% 
+        as_tsibble(index = (YearMonth))
+    } else {
+      data <-data_ts
+    }
+
+    if (input$iARIMA_Variable == "Rainfall"){
+      data <- data %>% rename(Value = Rainfall)
+      displayText = "Rainfall"
+      displayUnit = "mm"
+    } else {
+      if (input$iARIMA_Variable == "MeanTemp") {
+        data <- data %>% rename(Value = AveTemp)
+      } else if (input$iARIMA_Variable == "MaxTemp") {
+        data <- data %>% rename(Value = MaxTemp)
+      } else {
+        data <- data %>% rename(Value = MinTemp)
+      }
+      displayText = "Temperature"
+      displayUnit = "°C"
+    }
+    
+    aic <- 0
+    ets_model <- data %>%
+      model(ARIMA(Value ~ pdq(as.numeric(input$iARIMA_p),
+                              as.numeric(input$iARIMA_d),
+                              as.numeric(input$iARIMA_q))))
+
+    aic <- glance(ets_model)$AIC
+    bic <- glance(ets_model)$BIC
+    aicc <- glance(ets_model)$AICc
+    
+    forecast_values <- forecast(ets_model, h = input$iARIMA_Years * 12)  
+    
+    quantiles <- forecast_values %>%
+      group_by(.model) %>%
+      summarise(lower_80 = quantile(Value, 0.1),
+                upper_80 = quantile(Value, 0.9),
+                lower_95 = quantile(Value, 0.025),
+                upper_95 = quantile(Value, 0.975))
+    
+    # p <- ggplot() +
+    #   geom_line(data = data, 
+    #             aes(x = Date, y = Value, color = "Observed"), 
+    #             linetype = "solid") +
+    #   geom_line(data = forecast_values, 
+    #             aes(x = as.Date(YearMonth), y = .mean, color = "Forecast"), 
+    #             linetype = "dashed") +
+    #   geom_point(data = forecast_values, 
+    #              aes(x = as.Date(YearMonth), y = .mean, 
+    #                  text = paste("YearMonth:", YearMonth, 
+    #                               "<br>Forecasted:", round(.mean, 1), displayUnit)),
+    #              size = 1, color = "red") +
+    #   geom_point(data = data, 
+    #              aes(x = Date, y = Value, 
+    #                  text = paste("YearMonth:", YearMonth, 
+    #                               "<br>Observed:", round(Value, 1), displayUnit)),
+    #              size = 1, color = "blue") +
+    #   geom_ribbon(data = quantiles, 
+    #               aes(x = as.Date(YearMonth), 
+    #                   ymin = lower_80, 
+    #                   ymax = upper_80), fill = "black", alpha = 0.5) +
+    #   geom_ribbon(data = quantiles, 
+    #               aes(x = as.Date(YearMonth), 
+    #                   ymin = lower_95, 
+    #                   ymax = upper_95), fill = "gray", alpha = 0.5) +
+    #   xlab("Year") +
+    #   ylab(displayText) +
+    #   ggtitle(paste("Forecast ", displayText)) +
+    #   scale_color_manual(values = c("Observed" = "blue", "Forecast" = "red")) +
+    #   theme_minimal()
+    # 
+    #list(plot = ggplotly(p, tooltip = "text"), AIC = aic, BIC = bic, AICc = aicc)
+    
+    p <- forecast_values %>% autoplot(data) + 
+      ylab(displayText) + 
+      xlab("Year") +
+      theme_minimal()
       
-      if (input$variable == "Temperature") {
-          if (input$region != "All") {
-            temp <- Temp_YM %>%
-              filter(Region == input$region) %>%
-              rename(Value = AveMeanTemp)
-          } else {
-            temp <- Temp_YM_allR %>%
-              rename(Value = AveMeanTemp)
-          }
-          displayText = "Temp"
-          displayUnit = "°C"
-        } else {
-          if (input$region != "All") {
-            temp <- Rain_YM %>%
-              filter(Region == input$region) %>%
-              rename(Value = TotalRain)
-          } else {
-            temp <- Rain_YM_allR %>%
-              rename(Value = TotalRain)
-          }
-          displayText = "Rainfall"
-          displayUnit = "mm"
-        }
+    list(plot = p, AIC = aic, BIC = bic, AICc = aicc)
+  })
+  
+  output$plot_ARIMA <- renderPlot({
+    if( input$button_ARIMA_plot > 0) {
+      plot_and_ic <- isolate(outputPlotARIMA())
+      plot_and_ic$plot        
+    }
+  })
+  
+  output$text_ARIMA_IC1 <- renderUI({
+    if( input$button_ARIMA_plot > 0) {
+      plot_and_ic <- isolate(outputPlotARIMA())
+      ic_value <- paste("AIC:", round(plot_and_ic$AIC,1))
+      tags$div(class = "bordered-text", ic_value)
+    } 
+  })
+  
+  output$text_ARIMA_IC2 <- renderUI({
+    if( input$button_ARIMA_plot > 0) {
+      plot_and_ic <- isolate(outputPlotARIMA())
+      ic_value <- paste("BIC:", round(plot_and_ic$BIC,1))
+      tags$div(class = "bordered-text", ic_value)
+    }
+  })
+  
+  output$text_ARIMA_IC3 <- renderUI({
+    if( input$button_ARIMA_plot > 0) {
+      plot_and_ic <- isolate(outputPlotARIMA())
+      ic_value <- paste("AICc:", round(plot_and_ic$AICc,1))
+      tags$div(class = "bordered-text", ic_value)
+     } 
+  })
+  
+  #### Pre-forecast checks ####
+
+  outputTextStationary <- reactive ({
+
+    if (input$iCheck_STest == "ADF") {
+      if (input$iCheck_SVariable == "Rainfall"){
+        result <- adf.test(data_ts$Rainfall)
+      } else if (input$iCheck_SVariable == "MeanTemp") {
+        result <- adf.test(data_ts$AveMean)
+      } else if (input$iCheck_SVariable == "MaxTemp") {
+        result <- adf.test(data_ts$MaxTemp)
+      } else {
+        result <- adf.test(data_ts$MinTemp)
+      }
+      resultText <- paste("<b>Conducting ", input$iCheck_STest, " test</b>",
+                          "<br>Null hypothesis: The time series is not stationary",
+                          "<br>Alternative hypothesis: The time series is stationary",
+                          "<br>",
+                          "<br><b>Result</b>",
+                          "<br>Statistic:", round(result$statistic,3),
+                          "<br>p-value:", result$p.value,
+                          "<br>significant level:", input$iCheck_SAlpha,
+                          "<br>Conclusion:", ifelse(result$p.value < input$iCheck_SAlpha, 
+                                                "Reject null hypothesis (stationary)", 
+                                                "Fail to reject null hypothesis (non-stationary)"))
       
-      minDate = min(temp$Date)
-      maxDate = max(temp$Date)
-      ts_data <- ts(temp$Value,
-                    start = c(year(minDate), month(minDate)),
-                    end = c(year(maxDate), month(maxDate)), frequency = 12)
+    } else {
+      if (input$iCheck_SVariable == "Rainfall"){
+        result <- ur.kpss(data_ts$Rainfall)
+      } else if (input$iCheck_SVariable == "MeanTemp") {
+        result <- ur.kpss(data_ts$AveMean)
+      } else if (input$iCheck_SVariable == "MaxTemp") {
+        result <- ur.kpss(data_ts$MaxTemp)
+      } else {
+        result <- ur.kpss(data_ts$MinTemp)
+      }
       
-      actual_df <- data.frame(Date = time(ts_data), Actual = ts_data)
-      actual_df$Period <- format(as.Date(actual_df$Date,
-                                         origin = minDate), "%Y-%m")
-      switch(input$model,
-             "ARIMA" = { model = auto.arima(ts_data, p = 5, seasonal = TRUE)},
-             "Holt-Winters" = { model <- HoltWinters(ts_data)},
-             "Seasonal & Trend Decomposition" = {model <- stl(ts_data, s.window="periodic") }
-      )
+      CI <- paste0(as.numeric(input$iCheck_SAlpha) * 100, "pct")
+      criticalValue <- result@cval[, CI]
+      resultText <- paste("<br></b>Conducting ", input$iCheck_STest, " test</b>",
+                          "<br>Null hypothesis: The time series is stationary",
+                          "<br>Alternative hypothesis: The time series is not stationary",
+                          "<br>",
+                          "<br><b>Result:</b>",
+                          "<br>Statistic:", round(result@teststat, 3),
+                          "<br>lag:", result@lag,
+                          "<br>significant level:", input$iCheck_SAlpha,
+                          "<br>critical value:", criticalValue,
+                          "<br>Conclusion:", ifelse(result@teststat < criticalValue, 
+                                                "Reject null hypothesis (Not stationary)", 
+                                                "Fail to reject null hypothesis (Stationary)"))
+    }
+  })
   
-      forecast_values <- forecast(model, h = as.numeric(input$years) * 12, 
-                                  level = c(as.numeric(input$confidence)))
+  output$text_Stationary <- renderText({
+   if (input$button_Stationary_check > 0) {
+      isolate(outputTextStationary())
+    }
+    else{
+      print("Please click the button.")
+    }
+  })
   
-      forecast_df <- data.frame(Date = time(forecast_values$mean), 
-                                Forecast = forecast_values$mean, 
-                                LowerV = forecast_values$lower, 
-                                UpperV = forecast_values$upper)
-  
-      forecast_df$Period <- format(as.Date(forecast_df$Date, 
-                                           origin = minDate), "%Y-%m")
-  
-      LowerV <- paste("X", input$confidence, ".", sep = "")
-      HigherV <- paste("X", input$confidence, "..1", sep = "")
-      names(forecast_df)[names(forecast_df) == HigherV] <- "UpperV"
-      names(forecast_df)[names(forecast_df) == LowerV] <- "LowerV"
-  
-      #cannot go negative
-      forecast_df$LowerV <- pmax(forecast_df$LowerV, 0)
-     
-      plot_ly() %>%
-        add_lines(data = forecast_df, x = ~Date, y = ~Forecast, 
-                  name = "Forecast", line = list(color = 'blue'), 
-                  hoverinfo = "text", 
-                  text = ~paste("Year-Month: ", Period, 
-                                "<br>", displayText, ": ", 
-                                round(Forecast, 1), displayUnit))%>%
-        add_lines(data = actual_df, x = ~Date, y = ~Actual, 
-                  name = "Actual", line = list(color = 'red'), 
-                  hoverinfo = "text", 
-                  text = ~paste("Year-Month: ", Period, 
-                                "<br>", displayText, ": ", 
-                                Actual, displayUnit)) %>%
-        add_ribbons(data = forecast_df, x = ~Date, 
-                    ymin = ~LowerV, ymax = ~UpperV, 
-                    name = paste(input$confidence, "% CI"), 
-                    fillcolor = 'lightblue',
-                    opacity = 0.5,
-                    hoverinfo = "text", 
-                    text = ~paste("Year-Month: ", Period, 
-                                  "<br>CI:", round(LowerV,1), displayUnit,
-                                  "-", round(UpperV,1), displayUnit)) %>%
-        layout(title = paste("Forecasting ", displayText,
-                             " for the next ", input$years,
-                             " years using ", input$model),
-               xaxis = list(title = "Year"),
-               yaxis = list(title = displayText))
+  outputPlotDecomposition <- reactive ({
+    if (input$iCheck_DPlot == "D"){
+      if (input$iCheck_DVariable == "Rainfall"){
+        data_ts.ts = ts(data_ts$Rainfall, frequency = 12)
+      } else if (input$iCheck_DVariable == "MeanTemp") {
+        data_ts.ts = ts(data_ts$AveTemp, frequency = 12)
+      } else if (input$iCheck_DVariable == "MaxTemp") {
+        data_ts.ts = ts(data_ts$MaxTemp, frequency = 12)
+      } else {
+        data_ts.ts = ts(data_ts$MinTemp, frequency = 12)
+      }
       
+      decomposed <- decompose(data_ts.ts)
+      autoplot(decomposed) +
+        ggtitle(paste("Decomposition of the", input$iCheck_DVariable, "time-series data")) +
+        xlab("Year")      
+    } 
+    else {
+      if (input$iCheck_DVariable == "Rainfall"){
+        data_ts.ts = data_ts$Rainfall
+      } else if (input$iCheck_DVariable == "MeanTemp") {
+        data_ts.ts = data_ts$AveTemp
+      } else if (input$iCheck_DVariable == "MaxTemp") {
+        data_ts.ts = data_ts$MaxTemp
+      } else {
+        data_ts.ts = data_ts$MinTemp
+      }
+      ggtsdisplay(difference(data_ts.ts, 12),
+                  plot_type='partial', lag = 36) +
+        labs(title= paste("Seasonally differenced of", input$iCheck_DVariable), y="")
+    }
+  })
+  
+  output$plot_Decomposition <- renderPlot({
+    if (input$button_Decomposition_check > 0) {
+      isolate(outputPlotDecomposition())
     }
   })
 }

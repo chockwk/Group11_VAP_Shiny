@@ -3,24 +3,42 @@ pacman::p_load(bslib, shiny, shinydashboard, shinyWidgets, plotly)
 
 # Define UI for application
 fluidPage(
-  # Application title
   titlePanel("The Heat is On!"),
-  # Theme
   theme = bslib::bs_theme(bootswatch = "morph"),
-  # Wallpaper
   setBackgroundImage(
 #    src = "https://storage.googleapis.com/pod_public/1300/95971.jpg"
     src = "https://wallpapers.com/images/hd/cute-aesthetic-cloudy-sky-vyyff3zydu6k5b9l.jpg"
   ),
-  
+
+  tags$head(
+    tags$style(
+      HTML("        
+          .selectize-dropdown-content {
+            font-size: 16px; 
+          }
+          .selectize-control.single .selectize-input {
+            font-size: 16px; 
+            padding: 5px; /* Adjust the padding as needed */
+            margin-top: 0; /* Adjust the margin-top as needed */
+          }
+          .selectize-input {
+            height: 30px; 
+          }
+          
+          .bordered-text {
+            border: 1px solid black;
+            padding: 10px;
+            background-color: lightblue;
+          }
+        ")
+    )
+  ),
+
   navlistPanel(
     id = "tabset",
-    widths = c(2,10),
-    
+    widths = c(3,9),
     "Overview",
     tabPanel("Dashboard", 
-             # Application title
-
              tags$h1("Welcome to Singapore’s Race Against Climate Change"),
              tags$h2("Understanding Our Climate, Shaping Our Future"),
              tags$p(HTML("As the sun rises over the Lion City, we embark on an urgent journey to address a challenge that looms over our nation: climate change. Singapore, our home, our pride, stands at the forefront of a silent battle against the escalating impacts of a warming planet. This platform is born out of a necessity to harness the power of data, to visualize and understand the creeping changes to our environment, and to spearhead proactive strategies for resilience and sustainability.")),
@@ -52,10 +70,18 @@ fluidPage(
              mainPanel(
                
                # Inform Time and Forecast Validity
-               textOutput('closestTimestamp'),
-               textOutput('forecastValid'),
-               
-               # Weather Forecast
+               p("Current Date and Time:"),
+               verbatimTextOutput("currentTime"),
+               hr(),
+               p("Air Temperature:"),
+               verbatimTextOutput("airTemperature"),
+               hr(),
+               p("UV Index:"),
+               verbatimTextOutput("uvIndex"),
+               hr(),
+               p("Current PSI Data:"),
+               verbatimTextOutput("psiData"),
+               p("Two-Hour Rain Forecast:"),
                DT::dataTableOutput("weatherTable")
              )
     ),
@@ -64,15 +90,15 @@ fluidPage(
     tabPanel("Time Series Analysis", 
              sidebarLayout(
                sidebarPanel(
-                 selectInput("selected_years", "Select Years:", 
-                             choices = 1990:2023, 
+                 selectInput("selected_years", "Select Years (Up to 7)", 
+                             choices = seq(1990, 2023, by = 2), 
                              multiple = TRUE),
                  actionButton("showPlotButton", "Plot")
                ),
                mainPanel(
                  navset_card_underline(
-                   nav_panel("Temperature", plotOutput("temp_cycle_plot")),
-                   nav_panel("Rainfall", plotOutput("rain_cycle_plot"))
+                   nav_panel("Temperature", plotOutput("temp_cycleplot"), plotOutput("temp_horiplot")),
+                   nav_panel("Rainfall", plotOutput("rain_cycleplot"), plotOutput("rain_horiplot"))
                  )
                )
              )
@@ -82,19 +108,22 @@ fluidPage(
              sidebarLayout(
                sidebarPanel(
                  width = 3,
-                 selectInput("analysis_variable", "Variable:",
-                             choices = c("Temperature", "Rainfall")
+                 selectInput("style_param", "Style Parameter",
+                             choices = c("jenks", "pretty", "bclust", "equal", "fisher", "kmeans", "quantile"),
+                             selected = "quantile"
                  ),
-                 sliderInput("n_neighbors", "Number of Neighbors:",
-                             min = 0, max = 20, value = 5
+                 sliderInput("n_neighbors", "Number of Neighbors",
+                             min = 0, max = 20, 
+                             value = 5
                  ),
-                 selectInput("model_option", "Model Options:",
+                 selectInput("model_option", "Model Options",
                              choices = c("Sph", "Exp", "Gau", "Lin")
                  ),
-                 sliderInput("range_param", "Range:",
-                             min = 1000, max = 5000, step = 1000, value = 5000
+                 sliderInput("range_param", "Range",
+                             min = 1000, max = 5000, step = 1000, 
+                             value = 2000
                  ),
-                 selectInput("fit_method", "Fit Methods:",
+                 selectInput("fit_method", "Fit Methods",
                              choices = c(1, 2, 3, 4),
                              selected = 1
                  ),
@@ -103,27 +132,27 @@ fluidPage(
              mainPanel(
                width = 9,
                navset_card_underline(
-                 nav_panel("Temperature", plotOutput("geo_plot")),
-                 nav_panel("Rainfall")
+                 nav_panel("Temperature", plotOutput("temp_choromap"), plotOutput("temp_geoplot")),
+                 nav_panel("Rainfall", plotOutput("rain_choromap"), plotOutput("rain_geoplot"))
                )
              )
            )
     ),
     
-    tabPanel("Correlation", 
+    tabPanel("Correlation Analysis", 
              sidebarLayout(
                sidebarPanel(
                  width = 3,
-                 selectInput("variable", "Choose a grouping variable:",
+                 selectInput("variable", "Grouping Variable",
                              choices = c("Station", "Region")
                  ),
-                 selectInput("method", "Smoothing Method:", 
+                 selectInput("method", "Smoothing Method", 
                              choices = c("auto", "lm", "glm", "gam", "loess")
                  ),
-                 selectInput("association_type", "Association Type:", 
+                 selectInput("association_type", "Association Type", 
                              choices = c("parametric" = "p", "nonparametric" = "np", "robust" = "r")
                  ),
-                 selectInput("marginal_type", "Marginal Distribution Type:", 
+                 selectInput("marginal_type", "Marginal Distribution Type", 
                              choices = c("histogram", "boxplot", "density", "violin", "densigram")
                  ),
                  actionButton("CorrPlot_Button", "Plot")
@@ -411,45 +440,184 @@ fluidPage(
     ), # tabpanel
 
     "Forecasting",
-    tabPanel("Time Series Forecasting", 
-             sidebarLayout(
-               sidebarPanel(
-                 width = 3,
-                 selectInput(inputId = "variable",
-                             label = "Select variable to forecast",
-                             choices = c("Temperature", "Rainfall"),
-                             selected = "Temperature"
+    tabPanel("Pre-forecast Checks",
+             mainPanel(
+               width = 12,
+               navset_card_underline(
+                 nav_panel("Stationary Check",
+                           sidebarLayout(
+                             sidebarPanel(
+                               width = 4,
+                               HTML("<h6><b>Please select the parameters</b></h6>"),
+                               selectInput("iCheck_SVariable", "Select a variable:",
+                                           c("Rainfall" = "Rainfall",
+                                             "Mean Temperature" = "MeanTemp",
+                                             "Max Temperature" = "MaxTemp",
+                                             "Min Temperature" = "MinTemp"),
+                                           selected = "Rainfall"),
+                               selectInput("iCheck_STest", "Select a test:",
+                                           c("ADF" = "ADF",
+                                             "KPSS" = "KPSS")),  
+                               HTML("<font size = 2>Augmented Dickey-Fuller(ADF)</font>"),
+                               HTML("<font size = 2>Kwiatkowski–Phillips–Schmidt–Shin(KPSS)</font>"),
+                               radioButtons("iCheck_SAlpha", "Select the significance level:",
+                                           c("5%" = 0.05,
+                                             "10%" = 0.10)),   
+                               actionButton("button_Stationary_check", "Check")
+                             ),
+                             mainPanel(
+                                htmlOutput("text_Stationary")
+                             )
+                           )
                  ),
-                 selectInput(inputId = "model",
-                             label = "Select a model",
-                             choices = c("ARIMA", "Holt-Winters", "Seasonal & Trend Decomposition"),
-                             selected = "ARIMA"
-                 ),
-                 selectInput(inputId = "region",
-                             label = "Select a region",
-                             choices = c("All", "North", "North-East", "Central", "East", "West"),
-                             selected = "All"
-                 ),
-                 sliderInput(inputId = "years",
-                             label = "Years to forecast",
-                             min = 5,
-                             max = 20,
-                             value = 10
-                 ),
-                 radioButtons(inputId = "confidence",
-                              label = "Select the confidence level (%):",
-                              choices = c("90", "95", "99"),
-                              selected = "90"
-                 ),
-                 actionButton("Forecast_Button", "Forecast")
-               ),
-               mainPanel(
-                 width = 9,
-                 plotlyOutput("plotForecast")
+                 nav_panel("Decomposition Check",
+                           sidebarLayout(
+                             sidebarPanel(
+                               width = 4,
+                               HTML("<h6><b>Please select the parameters</b></h6>"),
+                               selectInput("iCheck_DVariable", "Select a variable:",
+                                           c("Rainfall" = "Rainfall",
+                                             "Mean Temperature" = "MeanTemp",
+                                             "Max Temperature" = "MaxTemp",
+                                             "Min Temperature" = "MinTemp"),
+                                           selected = "Rainfall"),
+                               selectInput("iCheck_DPlot", "Select plot:",
+                                           c("STL Decomposition" = "D",
+                                             "ACF" = "ACF"),
+                                           selected = "Decomposition"),
+                               actionButton("button_Decomposition_check", "Check")
+                             ),
+                             mainPanel(
+                               plotOutput("plot_Decomposition")
+                             )
+                           )
+                )
                )
              )
-          )
-    )
+    ),
+    tabPanel("Forecast Models", 
+               mainPanel(
+                 width = 12,
+                 navset_card_underline(
+                   nav_panel("ETS Model",
+                             sidebarLayout(
+                               sidebarPanel(
+                                 width = 4,
+                                 HTML("<h6><b>Please select the parameters</b></h6>"),
+                                 selectInput("iETS_Variable", "Select a variable:",
+                                             c("Rainfall" = "Rainfall",
+                                               "Mean Temperature" = "MeanTemp",
+                                               "Max Temperature" = "MaxTemp",
+                                               "Min Temperature" = "MinTemp"),
+                                             selected = "Rainfall"),  
+                                 selectInput("iETS_Region", "Select a region:",
+                                             c("All" = "All",
+                                               "North" = "North",
+                                               "North-East" = "North-East",
+                                               "Central" = "Central",
+                                               "East" = "East",
+                                               "West" = "West"),
+                                             selected = "All"),
+                                 selectInput("iETS_Error", "Select Error Term:",
+                                             c("Additive" = "A",
+                                               "Multiplicative" = "M"),
+                                             selected = "Additive"),
+                                 selectInput("iETS_Trend", "Select Trend Term:",
+                                             c("None" = "N",
+                                               "Additive" = "A",
+                                               "Damped variants" = "Ad"),
+                                             selected = "None"),                                
+                                 selectInput("iETS_Season", "Select Season Term:",
+                                             c("None" = "N",
+                                               "Additive" = "A",
+                                               "Multiplicative" = "M"),
+                                             selected = "None"),
+                                 selectInput("iETS_OptCrit", "Select Optimise Criterion:",
+                                             c("log-likelihood" = "lik",
+                                               "sigma of residuals" = "sigma",
+                                               "MeanAbsoluteError" = "mae",
+                                               "MeanSquareError" = "mse",
+                                               "Ave MSE" = "amse"),
+                                             selected = "sigma"),
+                                 sliderInput("iETS_Years", "Number of Years to forecast:", 
+                                             1, 10, value = 3),
+                                 
+                                 actionButton("button_ETS_plot", "Forecast")
+                               ),
+                               mainPanel(
 
+                                 fluidRow(
+                                   HTML("<b>Instructions: </b><br>Please use the Pre-forecast Checks tab."),
+                                   HTML("<br>You can examine whether the variable time series selected is stationary or not."),
+                                   HTML("<br>You can also check its ACF plot of residuals."),
+                                   HTML("<br>It takes some time to plot the graph. Your patience is appreciated."),                                  
+                                   column(4, uiOutput("text_ETS_IC1")),
+                                   column(4, uiOutput("text_ETS_IC2")),
+                                   column(4, uiOutput("text_ETS_IC3"))
+                                 ),
+                                 fluidRow(column(4, uiOutput("text_ETS_OptValue"))),
+                                 plotOutput("plot_ETS")
+                               )
+                             )
+                   ),
+                   nav_panel("ARIMA Model",
+                             sidebarLayout(
+                               sidebarPanel(
+                                 width = 4,
+                                 HTML("<h6><b>Please select the parameters</b></h6>"),
+                                 selectInput("iARIMA_Variable", "Select a variable:",
+                                             c("Rainfall" = "Rainfall",
+                                               "Mean Temperature" = "MeanTemp",
+                                               "Max Temperature" = "MaxTemp",
+                                               "Min Temperature" = "MinTemp"),
+                                             selected = "Rainfall"),  
+                                 selectInput("iARIMA_Region", "Select a region:",
+                                             c("All" = "All",
+                                               "North" = "North",
+                                               "North-East" = "North-East",
+                                               "Central" = "Central",
+                                               "East" = "East",
+                                               "West" = "West"),
+                                             selected = "All"),
+                                 HTML("<font size = 3><b>Seasonal term (pdq)</b></font>"),
+                                 selectInput("iARIMA_p", "Select p:",
+                                             c("1" = 1,
+                                               "2" = 2,
+                                               "3" = 3),
+                                             selected = "1"),
+                                 selectInput("iARIMA_d", "Select d:",
+                                             c("0" = 0,
+                                               "1" = 1,
+                                               "2" = 2),
+                                             selected = "0"), 
+                                 selectInput("iARIMA_q", "Select q:",
+                                             c("0" = 0,
+                                               "1" = 1,
+                                               "2" = 2),
+                                             selected = "0"), 
+                                 sliderInput("iARIMA_Years", "Number of Years to forecast:", 
+                                             1, 10, value = 3),
+                                 
+                                 actionButton("button_ARIMA_plot", "Forecast")
+                               ),
+                               mainPanel(
+                                 HTML("<b>Instructions: </b><br>Please use the Pre-forecast Checks tab."),
+                                 HTML("<br>You can examine whether the variable time series selected is stationary or not."),
+                                 HTML("<br>You can also check its ACF plot of residuals."),
+                                 HTML("<br>It takes some time to plot the graph. Your patience is appreciated."),                                  
+                                 fluidRow(
+                                   column(4, uiOutput("text_ARIMA_IC1")),
+                                   column(4, uiOutput("text_ARIMA_IC2")),
+                                   column(4, uiOutput("text_ARIMA_IC3"))
+                                 ),
+                                 plotOutput("plot_ARIMA")
+                                 )
+                             )
+                   )
+                 )
+               )
+    )
+  )
 )
+
 
